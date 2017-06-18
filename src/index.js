@@ -164,6 +164,7 @@ export default class {
     } else if (last) {
       // ZREVRANGE id before|+inf -inf LIMIT 1 last + 1
     } else {
+      // ZRANGE id -inf +inf LIMIT 0 first|20
     }
   }
 
