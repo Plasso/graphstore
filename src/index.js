@@ -148,4 +148,25 @@ export default class {
       });
     });
   }
+
+  async createEdge(name, id, leftNodeId, rightNodeId) {
+    return new Promise((resolve, reject) => {
+      this.redis.zaddnx(name, id, JSON.stringify({leftNodeId, rightNodeId}), (err, result) => {
+        console.log(results);
+        resolve();
+      });
+    });
+  }
+
+  async readEdges(name, { first, last, after, before }) {
+    if (first) {
+      // ZRANGE id after|-inf +inf LIMIT 1 first + 1
+    } else if (last) {
+      // ZREVRANGE id before|+inf -inf LIMIT 1 last + 1
+    } else {
+    }
+  }
+
+  async deleteEdge(id) {
+  }
 }

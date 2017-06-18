@@ -25,6 +25,8 @@ test('', async () => {
 
   await gs.updateNode('test', { test: 'test2' });
 
+  await gs.createEdge('test_edge', 1, 'test', 'test');
+
   client.end(true);
 });
 
