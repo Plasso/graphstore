@@ -1,32 +1,79 @@
-import GraphStore from '../src';
+import { Node } from '../src';
 import redis from 'redis';
 
+let id = 0;
+let client;
 
-test('', async () => {
-  const client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
+class NodeDelegate {
+  async createNode() {
+    id += 1;
+    return id;
+  }
+
+  async readNode(id) {
+    return { test: 'asdf' };
+  }
+
+  async deleteNode() {
+  }
+
+  async updateNode(/* id, newNode, updateId */) {
+    // console.log(id, newNode, updateId);
+  }
+}
+
+beforeAll(() => {
+  client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
 
   client.flushdb();
+});
 
-  const gs = new GraphStore(client);
+afterAll(() => {
+  client.end(true);
+});
 
-  await gs.createNode('test', { test: 'asdf' });
+test('can create a node', async () => {
+  const gs = new Node(client, new NodeDelegate());
 
-  const node = await gs.readNode('test');
+  const nodeId = await gs.createNode({ test: 'asdf' });
+
+  const node = await gs.readNode(nodeId);
 
   expect(node).toMatchObject({ test: 'asdf' });
+});
 
-  await expect(gs.createNode('test', {})).rejects.toBeDefined();
+test('cannot create duplicate node', async () => {
+  const gs = new Node(client, new NodeDelegate());
+  const nodeId = await gs.createNode({ test: 'asdf' });
 
-  await gs.deleteNode('test');
+  await expect(gs._createNode(nodeId, {})).rejects.toBeDefined();
+});
 
-  const node2 = await gs.readNode('test');
+test('can read a node not in cache', async () => {
+  const gs = new Node(client, new NodeDelegate());
+  const node = await gs.readNode('test');
+  expect(node).toMatchObject({ test: 'asdf' });
+});
 
-  await gs.createNode('test', { test: 'asdf' });
+test('can delete node', async () => {
+  const gs = new Node(client, new NodeDelegate());
+  const nodeId = await gs.createNode({ test: 'asdf' });
 
-  await gs.updateNode('test', { test: 'test2' });
+  await gs.deleteNode(nodeId);
 
-  await gs.createEdge('test_edge', 1, 'test', 'test');
+  const node = await gs.readNode(nodeId);
 
-  client.end(true);
+  expect(node).toBe('MISSING');
+});
+
+test('can update a node', async () => {
+  const gs = new Node(client, new NodeDelegate());
+  const nodeId = await gs.createNode({ test: 'asdf' });
+
+  await gs.updateNode(nodeId, { test: 'test2' });
+
+  const node = await gs.readNode(nodeId);
+
+  expect(node).toMatchObject({ test: 'test2' });
 });
 
