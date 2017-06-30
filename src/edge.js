@@ -4,10 +4,12 @@ export default class {
     this.delegate = delegate;
   }
 
-  async createEdge(name, id, leftNodeId, rightNodeId) {
-    return new Promise((resolve, reject) => {
+  async createEdge(leftNodeId, rightNodeId) {
+    return new Promise(async (resolve, reject) => {
+      const edgeId = await this.delegate.createEdge(leftNodeId, rightNodeId);
+      const edgeName = await this.delegate.edgeName();
       // TODO: zaddnx wanted here.
-      this.redis.zadd(name, id, JSON.stringify({leftNodeId, rightNodeId}), (err, result) => {
+      this.redis.zadd(edgeName, edgeId, JSON.stringify({leftNodeId, rightNodeId}), (err, result) => {
         if (err) {
           reject(err);
         }
