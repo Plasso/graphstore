@@ -1,12 +1,23 @@
+/* @flow */
+
 import counter from './counter';
 
+interface NodeDelegate {
+  createNode(data: {}): string;
+  readNode(id: string): {};
+  updateNode(id: string, newNode: {}, updateId: string): void;
+  deleteNode(id: string): void;
+}
+
 export default class {
-  constructor(redis, delegate) {
+  redis: RedisClient;
+  delegate: NodeDelegate;
+  constructor(redis: RedisClient, delegate: NodeDelegate) {
     this.redis = redis;
     this.delegate = delegate;
   }
 
-  async _createNode(id, data) {
+  async _createNode(id: string, data: {}) {
     return new Promise((resolve, reject) => {
       this.redis.get(id, (err, node) => {
         if (err) {
@@ -56,12 +67,12 @@ export default class {
     });
   }
 
-  async createNode(data) {
+  async createNode(data: {}) {
     const id = await this.delegate.createNode(data);
     return this._createNode(id, data);
   }
 
-  async readNode(id) {
+  async readNode(id: string) {
     return new Promise((resolve, reject) => {
       this.redis.get(id, async (err, node) => {
         if (err) {
@@ -98,7 +109,7 @@ export default class {
     });
   }
 
-  async readNodes(ids) {
+  async readNodes(ids: Array<string>) {
     return new Promise((resolve, reject) => {
       this.redis.mget(ids, (err, nodes) => {
         if (err) {
@@ -120,7 +131,7 @@ export default class {
     });
   }
 
-  async updateNode(id, updates, deletes) {
+  async updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
     let tries = 0;
 
     while(tries < 3) {
@@ -134,7 +145,7 @@ export default class {
     throw new Error(`Could not update node ${id}`);
   }
 
-  async _updateNode(id, updates, deletes) {
+  async _updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
     return new Promise(async (resolve, reject) => {
       this.redis.watch(id);
       const updateId = await counter(this.redis);
@@ -181,7 +192,7 @@ export default class {
     });
   }
 
-  async deleteNode(id) {
+  async deleteNode(id: string) {
     return new Promise(async (resolve, reject) => {
       await this.delegate.deleteNode(id);
       this.redis.set(id, 'MISSING', (err) => {
