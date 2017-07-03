@@ -2,7 +2,7 @@
 
 interface EdgeDelegate {
   edgeName(): string;
-  createEdge(leftNodeId: string, rightNodeId: string): string;
+  createEdge(leftNodeId: string, rightNodeId: string): number;
 }
 
 export default class {
@@ -17,8 +17,7 @@ export default class {
     return new Promise(async (resolve, reject) => {
       const edgeId = await this.delegate.createEdge(leftNodeId, rightNodeId);
       const edgeName = await this.delegate.edgeName();
-      // TODO: zaddnx wanted here.
-      this.redis.zadd(edgeName, edgeId, JSON.stringify({leftNodeId, rightNodeId}), (err, result) => {
+      this.redis.zadd(edgeName, 'NX', edgeId, JSON.stringify({leftNodeId, rightNodeId}), (err, result) => {
         if (err) {
           reject(err);
         }
@@ -44,10 +43,10 @@ export default class {
       });
     } else if (last) {
       let min;
-      if (after) {
+      if (before) {
         min = `(${before}`;
       } else {
-        min = -Infinity;
+        min = Infinity;
       }
       const args = [name, min, -Infinity, 'WITHSCORES', 'LIMIT', 0, Math.min(last, 50)];
       return new Promise((resolve, reject) => {
