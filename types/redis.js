@@ -19,6 +19,9 @@ interface RedisClient {
   mget(ids: Array<string>, cb: RedisDataCallback): void;
   set(id: string, data: string, cb: RedisErrorCallback): void;
   setnx(id: string, data: string, cb: RedisErrorCallback): void;
+  zadd(name: string, id: string, data: string, cb: RedisDataCallback): void;
+  zrangebyscore(args: Array<any>, cb: RedisDataCallback): void;
+  zrevrangebyscore(args: Array<any>, cb: RedisDataCallback): void;
   watch(id: string): void;
   multi(): RedisMultiClient;
 }

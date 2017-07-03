@@ -1,10 +1,19 @@
+/* @flow */
+
+interface EdgeDelegate {
+  edgeName(): string;
+  createEdge(leftNodeId: string, rightNodeId: string): string;
+}
+
 export default class {
-  constructor(redis, delegate) {
+  redis: RedisClient;
+  delegate: EdgeDelegate;
+  constructor(redis: RedisClient, delegate: EdgeDelegate) {
     this.redis = redis;
     this.delegate = delegate;
   }
 
-  async createEdge(leftNodeId, rightNodeId) {
+  async createEdge(leftNodeId: string, rightNodeId: string) {
     return new Promise(async (resolve, reject) => {
       const edgeId = await this.delegate.createEdge(leftNodeId, rightNodeId);
       const edgeName = await this.delegate.edgeName();
@@ -18,7 +27,8 @@ export default class {
     });
   }
 
-  async readEdges(name, { first, last, after, before }) {
+  async readEdges({ first, last, after, before }: { first: number, last: number, after: string, before: string }) {
+    const name = await this.delegate.edgeName();
     if (first) {
       let min;
       if (after) {
@@ -55,6 +65,6 @@ export default class {
     }
   }
 
-  async deleteEdge(id) {
+  async deleteEdge(id: string) {
   }
 }
