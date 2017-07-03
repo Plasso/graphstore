@@ -1,3 +1,5 @@
+/* @flow */
+
 import { Edge } from '../src';
 import redis from 'redis';
 
@@ -28,5 +30,6 @@ afterAll(() => {
 });
 
 test('can create an edge', async () => {
+
 
 });
