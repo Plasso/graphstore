@@ -22,10 +22,11 @@ class NodeDelegate {
   }
 }
 
-beforeAll(() => {
+beforeAll((done) => {
   client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
-
-  client.flushdb();
+  client.once('ready', function () {
+    client.flushdb(done);
+  });
 });
 
 afterAll(() => {

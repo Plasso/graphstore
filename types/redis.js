@@ -1,3 +1,7 @@
+interface RedisCallback {
+    (): void;
+}
+
 interface RedisErrorCallback {
     (err?: Error): void;
 }
@@ -24,7 +28,8 @@ interface RedisClient {
   zrevrangebyscore(args: Array<any>, cb: RedisDataCallback): void;
   incr(name: string, cb: RedisDataCallback): void;
   watch(id: string): void;
-  flushdb(): void;
+  flushdb(cb: RedisErrorCallback): void;
+  once(name: string, cb: RedisCallback): void;
   end(force: boolean): void;
   multi(): RedisMultiClient;
 }
