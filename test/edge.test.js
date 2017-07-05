@@ -5,6 +5,22 @@ import redis from 'redis';
 
 let id = 0;
 let client;
+let nodes = [
+  { id: 1, asdf: 1 },
+  { id: 2, asdf: 2 },
+];
+let edges = [
+  { id: 1, rightNodeId: 1 },
+  { id: 2, rightNodeId: 2 },
+  { id: 3, rightNodeId: 3 },
+  { id: 4, rightNodeId: 4 },
+  { id: 5, rightNodeId: 5 },
+  { id: 6, rightNodeId: 6 },
+  { id: 7, rightNodeId: 7 },
+  { id: 8, rightNodeId: 8 },
+  { id: 9, rightNodeId: 9 },
+  { id: 10, rightNodeId: 10 },
+];
 
 class EdgeDelegate {
   async edgeName() {
@@ -17,6 +33,15 @@ class EdgeDelegate {
     id += 1;
     return id;
   }
+  async getEdgesForward(leftId, { offset, limit }) {
+    console.log('getEdgesForward', offset, limit);
+    return edges.slice(offset, offset + limit);
+  }
+  async getEdgesAfterId(leftId, { after, first }) {
+    console.log('getEdgesAfterId');
+    const start = after || 0;
+    return edges.slice(start, start + first);
+  }
 }
 
 class NodeDelegate {
@@ -26,7 +51,7 @@ class NodeDelegate {
   }
 
   async readNode(id) {
-    return { test: 'asdf' };
+    return nodes[id];
   }
 
   async deleteNode() {
@@ -51,17 +76,17 @@ afterAll(() => {
 test('can create an edge', async () => {
   const edge = new Edge(client, new EdgeDelegate());
   const node = new Node(client, new NodeDelegate());
+  Edge.MAX_BATCH = 5;
 
-  const idLeft = await node.createNode({ asdf: 'left' });
-  const idRight = await node.createNode({ asdf: 'right' });
-  const idRight2 = await node.createNode({ asdf: 'right2' });
-
-  const edgeId = await edge.createEdge(idLeft, idRight);
-  await edge.createEdge(idLeft, idRight2);
-
-  const edges = await edge.readEdges(idLeft, { first: 2 });
-  const edges2 = await edge.readEdges(idLeft, { last: 2 });
+  const edges = await edge.readEdges(1, { after: 0, first: 2 });
+  const edges2 = await edge.readEdges(1, { first: 5 });
+  const edges3 = await edge.readEdges(1, { after: 5, first: 5 });
 
   console.log(edges);
   console.log(edges2);
+  console.log(edges3);
+
+  const count = await edge.edgeCount();
+
+  console.log(count);
 });

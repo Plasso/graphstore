@@ -23,7 +23,8 @@ interface RedisClient {
   mget(ids: Array<string>, cb: RedisDataCallback): void;
   set(id: string, data: string, cb: RedisErrorCallback): void;
   setnx(id: string, data: string, cb: RedisErrorCallback): void;
-  zadd(name: string, nx: string, id: number, data: string, cb: RedisDataCallback): void;
+  zadd(name: string, nx: string, id: string, data: string, cb: RedisDataCallback): void;
+  zadd(args: Array<any>, cb: RedisErrorCallback): void;
   zrangebyscore(args: Array<any>, cb: RedisDataCallback): void;
   zrevrangebyscore(args: Array<any>, cb: RedisDataCallback): void;
   incr(name: string, cb: RedisDataCallback): void;
@@ -31,6 +32,9 @@ interface RedisClient {
   flushdb(cb: RedisErrorCallback): void;
   once(name: string, cb: RedisCallback): void;
   end(force: boolean): void;
+  unwatch(id: string): void;
+  zrank(name: string, id: string, cb: RedisDataCallback): void;
+  zcard(name: string, cb: RedisDataCallback): void;
   multi(): RedisMultiClient;
 }
 
