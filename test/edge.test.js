@@ -5,48 +5,38 @@ import redis from 'redis';
 
 let id = 0;
 let client;
-let nodes = [
-  { id: 1, asdf: 1 },
-  { id: 2, asdf: 2 },
-];
-let edges = [
-  { id: 1, rightNodeId: 1 },
-  { id: 2, rightNodeId: 2 },
-  { id: 3, rightNodeId: 3 },
-  { id: 4, rightNodeId: 4 },
-  { id: 5, rightNodeId: 5 },
-  { id: 6, rightNodeId: 6 },
-  { id: 7, rightNodeId: 7 },
-  { id: 8, rightNodeId: 8 },
-  { id: 9, rightNodeId: 9 },
-  { id: 10, rightNodeId: 10 },
-];
+let nodes = {};
+let edges = {};
 
 class EdgeDelegate {
   async edgeName() {
     return 'test_edge';
   }
-  async edgeCount() {
-    return 10;
+  async edgeCount(leftId) {
+    return edges[leftId] ? edges[leftId].length : 0;
   }
-  async createEdge() {
+  async createEdge(leftNodeId, rightNodeId) {
     id += 1;
+    edges[leftNodeId] = edges[leftNodeId] || [];
+    edges[leftNodeId].push({ id, leftNodeId, rightNodeId });
+
     return id;
   }
   async getEdgesForward(leftId, { offset, limit }) {
-    console.log('getEdgesForward', offset, limit);
-    return edges.slice(offset, offset + limit);
+    return edges[leftId].slice(offset, offset + limit);
   }
   async getEdgesAfterId(leftId, { after, first }) {
-    console.log('getEdgesAfterId');
     const start = after || 0;
-    return edges.slice(start, start + first);
+    return edges[leftId].slice(start, start + first);
   }
 }
 
 class NodeDelegate {
-  async createNode() {
+  async createNode(data) {
     id += 1;
+
+    nodes[id] = data;
+
     return id;
   }
 
@@ -54,11 +44,12 @@ class NodeDelegate {
     return nodes[id];
   }
 
-  async deleteNode() {
+  async deleteNode(id) {
+    delete nodes[id];
   }
 
-  async updateNode(/* id, newNode, updateId */) {
-    // console.log(id, newNode, updateId);
+  async updateNode(id, newNode /* , updateId */) {
+    nodes[id] = newNode;
   }
 }
 

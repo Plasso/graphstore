@@ -2,7 +2,8 @@
 
 type EdgeRecord = {
   id: number;
-  rightNodeId: number;
+  leftNodeId: string;
+  rightNodeId: string;
 };
 
 interface EdgeDelegate {
@@ -25,7 +26,7 @@ export default class Edge {
 
   async _createEdge(edgeName: string, edgeId: string, rightNodeId: string) {
     return new Promise(async (resolve, reject) => {
-      this.redis.zadd(edgeName, 'NX', edgeId, JSON.stringify(rightNodeId), (err, result) => {
+      this.redis.zadd(edgeName, 'NX', edgeId, JSON.stringify(), (err, result) => {
         if (err) {
           reject(err);
         }
