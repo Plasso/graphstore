@@ -4,23 +4,6 @@ import redis from 'redis';
 let id = 0;
 let client;
 
-class NodeDelegate {
-  async createNode() {
-    id += 1;
-    return id;
-  }
-
-  async readNode(id) {
-    return { test: 'asdf' };
-  }
-
-  async deleteNode() {
-  }
-
-  async updateNode(/* id, newNode, updateId */) {
-    // console.log(id, newNode, updateId);
-  }
-}
 
 beforeAll((done) => {
   client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');

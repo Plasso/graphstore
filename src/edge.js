@@ -1,19 +1,5 @@
 /* @flow */
 
-type EdgeRecord = {
-  id: number;
-  leftNodeId: string;
-  rightNodeId: string;
-};
-
-interface EdgeDelegate {
-  edgeName(): string;
-  createEdge(leftNodeId: string, rightNodeId: string): number;
-  edgeCount(): number;
-  getEdgesForward(leftId: string, { offset: number, limit: number }): Array<EdgeRecord>;
-  getEdgesAfterId(leftId: string, { after: string, first: number }): Array<EdgeRecord>;
-}
-
 export default class Edge {
   redis: RedisClient;
   delegate: EdgeDelegate;
@@ -24,29 +10,14 @@ export default class Edge {
 
   static MAX_BATCH = 50;
 
-  async _createEdge(edgeName: string, edgeId: string, rightNodeId: string) {
-    return new Promise(async (resolve, reject) => {
-      this.redis.zadd(edgeName, 'NX', edgeId, JSON.stringify(), (err, result) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(edgeId);
-      });
-    });
-  }
-
   async createEdge(leftNodeId: string, rightNodeId: string) {
-    const edgeId = await this.delegate.createEdge(leftNodeId, rightNodeId);
-    const name = await this.delegate.edgeName();
-    const edgeName = `${name}_${leftNodeId}`;
-
-    return this._createEdge(edgeName, edgeId.toString(), rightNodeId);
+    return this.delegate.createEdge(leftNodeId, rightNodeId);
   }
 
-  async _updateCountRec() {
+  async _updateCountRec(leftId: string) {
     return new Promise(async (resolve, reject) => {
-      const name = await this.delegate.edgeName();
-      const counterName = `${name}_count`;
+      const name = await this.delegate.edgeName(leftId);
+      const counterName = `${name}_${leftId}_count`;
       this.redis.watch(counterName);
       this.redis.get(counterName, async (err, count) => {
         if (err) {
@@ -61,7 +32,7 @@ export default class Edge {
         }
 
         const multi = this.redis.multi();
-        const newCount = await this.delegate.edgeCount();
+        const newCount = await this.delegate.edgeCount(leftId);
 
         multi.set(counterName, newCount.toString());
 
@@ -82,12 +53,12 @@ export default class Edge {
     });
   }
 
-  async _updateCount() {
+  async _updateCount(leftId: string) {
     let tries = 0;
 
     while(tries < 3) {
       try {
-        const newCount = await this._updateCountRec();
+        const newCount = await this._updateCountRec(leftId);
         return newCount;
       } catch (e) {
         tries = tries + 1;
@@ -96,8 +67,8 @@ export default class Edge {
     throw new Error(`Could not update count`);
   }
 
-  async edgeCount() {
-    const name = await this.delegate.edgeName();
+  async edgeCount(leftId: string) {
+    const name = await this.delegate.edgeName(leftId);
     return new Promise((resolve, reject) => {
       this.redis.get(`${name}_count`, async (err, count) => {
         if (err) {
@@ -105,7 +76,7 @@ export default class Edge {
           return;
         }
         if (count == null) {
-          const newCount = await this._updateCount();
+          const newCount = await this._updateCount(leftId);
           resolve(newCount);
           return;
         }
@@ -115,8 +86,7 @@ export default class Edge {
   }
 
   async _readFirst(leftId: string, { after, first }: { after: string, first: number }) {
-    const name = await this.delegate.edgeName();
-    const edgeName = `${name}_${leftId}`;
+    const edgeName = await this.delegate.edgeName(leftId);
     let min;
     if (after) {
       min = `(${after}`;
@@ -132,7 +102,7 @@ export default class Edge {
   }
 
   async _readLast(leftId: string, { before, last }: { before: string, last: number }) {
-    const name = await this.delegate.edgeName();
+    const name = await this.delegate.edgeName(leftId);
     const edgeName = `${name}_${leftId}`;
     let min;
     if (before) {
@@ -174,7 +144,7 @@ export default class Edge {
   }
 
   async _overlapsCache(leftId: string, { after, first }: { after: string, first: number }) {
-    const name = await this.delegate.edgeName();
+    const name = await this.delegate.edgeName(leftId);
     const edgeName = `${name}_${leftId}`;
 
     let rank;

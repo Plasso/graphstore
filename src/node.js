@@ -2,14 +2,7 @@
 
 import counter from './counter';
 
-interface NodeDelegate {
-  createNode(data: {}): string;
-  readNode(id: string): {};
-  updateNode(id: string, newNode: {}, updateId: string): void;
-  deleteNode(id: string): void;
-}
-
-export default class {
+export default class Node {
   redis: RedisClient;
   delegate: NodeDelegate;
   constructor(redis: RedisClient, delegate: NodeDelegate) {
@@ -69,12 +62,15 @@ export default class {
 
   async createNode(data: {}) {
     const id = await this.delegate.createNode(data);
-    return this._createNode(id, data);
+    await this._createNode(id, data);
+
+    return `${this.delegate.getNodeType()}_${id}`;
   }
 
   async readNode(id: string) {
+    const [_, nodeId] = id.split('_');
     return new Promise((resolve, reject) => {
-      this.redis.get(id, async (err, node) => {
+      this.redis.get(nodeId, async (err, node) => {
         if (err) {
           reject(err);
           return;
@@ -85,9 +81,9 @@ export default class {
         }
 
         if (node == null) {
-          const newNode = await this.delegate.readNode(id);
+          const newNode = await this.delegate.readNode(nodeId);
           if (newNode) {
-            this._createNode(id, newNode);
+            this._createNode(nodeId, newNode);
             node = JSON.stringify(newNode);
           }
         }
@@ -110,8 +106,12 @@ export default class {
   }
 
   async readNodes(ids: Array<string>) {
+    const nodeIds = ids.map((id) => {
+      const [_, nodeId] = id.split('_');
+      return nodeId;
+    });
     return new Promise((resolve, reject) => {
-      this.redis.mget(ids, (err, nodes) => {
+      this.redis.mget(nodeIds, (err, nodes) => {
         if (err) {
           reject(err);
           return;
@@ -133,10 +133,11 @@ export default class {
 
   async updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
     let tries = 0;
+    const [_, nodeId] = id.split('_');
 
     while(tries < 3) {
       try {
-        await this._updateNode(id, updates, deletes);
+        await this._updateNode(nodeId, updates, deletes);
         return;
       } catch (e) {
         tries = tries + 1;
@@ -193,9 +194,10 @@ export default class {
   }
 
   async deleteNode(id: string) {
+    const [_, nodeId] = id.split('_');
     return new Promise(async (resolve, reject) => {
-      await this.delegate.deleteNode(id);
-      this.redis.set(id, 'MISSING', (err) => {
+      await this.delegate.deleteNode(nodeId);
+      this.redis.set(nodeId, 'MISSING', (err) => {
         if (err) {
           reject(err);
           return;
@@ -204,5 +206,9 @@ export default class {
         resolve();
       });
     });
+  }
+
+  getNodeType() {
+    return this.delegate.getNodeType();
   }
 }

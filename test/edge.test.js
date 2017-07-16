@@ -2,34 +2,11 @@
 
 import { Edge, Node } from '../src';
 import redis from 'redis';
+import MemoryEdgeDelegate from '../src/memory-edge-delegate';
 
 let id = 0;
 let client;
 let nodes = {};
-let edges = {};
-
-class EdgeDelegate {
-  async edgeName() {
-    return 'test_edge';
-  }
-  async edgeCount(leftId) {
-    return edges[leftId] ? edges[leftId].length : 0;
-  }
-  async createEdge(leftNodeId, rightNodeId) {
-    id += 1;
-    edges[leftNodeId] = edges[leftNodeId] || [];
-    edges[leftNodeId].push({ id, leftNodeId, rightNodeId });
-
-    return id;
-  }
-  async getEdgesForward(leftId, { offset, limit }) {
-    return edges[leftId].slice(offset, offset + limit);
-  }
-  async getEdgesAfterId(leftId, { after, first }) {
-    const start = after || 0;
-    return edges[leftId].slice(start, start + first);
-  }
-}
 
 class NodeDelegate {
   async createNode(data) {
@@ -65,7 +42,7 @@ afterAll(() => {
 });
 
 test('can create an edge', async () => {
-  const edge = new Edge(client, new EdgeDelegate());
+  const edge = new Edge(client, new MemoryEdgeDelegate(''));
   const node = new Node(client, new NodeDelegate());
   Edge.MAX_BATCH = 5;
 
