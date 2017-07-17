@@ -17,12 +17,12 @@ export default class MemoryEdgeDelegate implements EdgeDelegate {
     return this.edges[leftId] ? this.edges[leftId].length : 0;
   }
 
-  async createEdge(leftNodeType:string, leftNodeId: string, rightNodeType: string, rightNodeId: string) {
+  async createEdge(leftNodeId: string, rightNodeId: string) {
     this.edges[leftNodeId] = this.edges[leftNodeId] || [];
 
     const id = this.edges[leftNodeId].length;
 
-    this.edges[leftNodeId].push({ id, leftNodeType, leftNodeId, rightNodeType, rightNodeId });
+    this.edges[leftNodeId].push({ id, leftNodeId, rightNodeId });
 
     return id.toString(32);
   }

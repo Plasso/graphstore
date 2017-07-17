@@ -1,8 +1,6 @@
 type EdgeRecord = {
   id: number;
-  leftNodeType: string;
   leftNodeId: string;
-  rightNodeType: string;
   rightNodeId: string;
 };
 
@@ -23,7 +21,7 @@ type EdgeBeforeLast = {
 
 interface EdgeDelegate {
   edgeName(leftId: string): Promise<string>;
-  createEdge(leftNodeType: string, leftNodeId: string, rightNodeType: string, rightNodeId: string): Promise<string>;
+  createEdge(leftNodeId: string, rightNodeId: string): Promise<string>;
   edgeCount(leftId: string): Promise<number>;
   getEdgesForward(leftId: string, limitOffset: EdgeLimitOffset): Promise<Array<EdgeRecord>>;
   getEdgesBackwards(leftId: string, limitOffset: EdgeLimitOffset): Promise<Array<EdgeRecord>>;
@@ -33,8 +31,8 @@ interface EdgeDelegate {
 
 interface NodeDelegate {
   createNode(data: {}): Promise<string>;
-  readNode(id: string): Promise<{}>;
-  updateNode(id: string, newNode: {}, updateId: string): Promise<void>;
+  readNodes(ids: Array<string>): Promise<Array<{id: string}>>;
+  updateNode(id: string, newNode: { id: string }, updateId: string): Promise<void>;
   deleteNode(id: string): Promise<void>;
   getNodeType(): string;
 }

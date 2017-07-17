@@ -17,7 +17,7 @@ export default class Edge {
   static MAX_BATCH = 50;
 
   async createEdge(leftNodeId: string, rightNodeId: string) {
-    return this.delegate.createEdge(this.leftNode.getNodeType(), leftNodeId, this.rightNode.getNodeType(), rightNodeId);
+    return this.delegate.createEdge(leftNodeId, rightNodeId);
   }
 
   async _updateCountRec(leftId: string) {

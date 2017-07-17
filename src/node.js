@@ -10,9 +10,13 @@ export default class Node {
     this.delegate = delegate;
   }
 
+  _id(id: string) {
+    return `${this.delegate.getNodeType()}_${id}`;
+  }
+
   _createNode(id: string, data: {}) {
     return new Promise((resolve, reject) => {
-      this.redis.get(id, (err, node) => {
+      this.redis.get(this._id(id), (err, node) => {
         if (err) {
           reject(err);
           return;
@@ -33,7 +37,7 @@ export default class Node {
         }
 
         if (node === 'MISSING') {
-          this.redis.set(id, json, (err) => {
+          this.redis.set(this._id(id), json, (err) => {
             if (err) {
               reject(err);
               return;
@@ -42,7 +46,7 @@ export default class Node {
             resolve(id);
           });
         } else {
-          this.redis.setnx(id, json, (err, result) => {
+          this.redis.setnx(this._id(id), json, (err, result) => {
             if (err) {
               reject(err);
               return;
@@ -68,60 +72,49 @@ export default class Node {
   }
 
   async readNode(id: string) {
-    return new Promise((resolve, reject) => {
-      this.redis.get(id, async (err, node) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        if (node === 'MISSING') {
-          resolve(node);
-        }
-
-        if (node == null) {
-          const newNode = await this.delegate.readNode(id);
-          if (newNode) {
-            this._createNode(id, newNode);
-            node = JSON.stringify(newNode);
-          }
-        }
-
-        if (node == null) {
-          resolve('MISSING');
-        }
-
-        let obj;
-
-        try {
-          obj = JSON.parse(node);
-        } catch (e) {
-          reject(e);
-        }
-
-        resolve(obj);
-      });
-    });
+    const nodes = await this.readNodes([id]);
+    return nodes[0];
   }
 
   async readNodes(ids: Array<string>) {
+    const nodeIds = ids.map((id) => this._id(id));
     return new Promise((resolve, reject) => {
-      this.redis.mget(ids, (err, nodes) => {
+      this.redis.mget(nodeIds, async (err, nodes) => {
         if (err) {
           reject(err);
           return;
         }
 
-        resolve(nodes.map((node) => {
-          if (node === 'MISSING') {
-            return node;
+        const idToIndex = {};
+
+        ids.forEach((id, idx) => {
+          idToIndex[id] = idx;
+        });
+        const missingIds = [];
+        nodes.forEach((node, idx) => {
+          if (node === null) {
+            missingIds.push(ids[idx]);
+            nodes[idx] = 'MISSING';
+          } else if (node !== 'MISSING') {
+            try {
+              nodes[idx] = JSON.parse(node);
+            } catch(_) {
+              nodes[idx] = 'CORRUPT';
+            }
           }
-          try {
-            return JSON.parse(node);
-          } catch (e) {
-            return e;
-          }
-        }));
+        });
+
+        if (missingIds.length > 0) {
+          const delegateNodes = await this.delegate.readNodes(missingIds);
+          delegateNodes.forEach((delegateNode) => {
+            if (delegateNode) {
+              this._createNode(delegateNode.id, delegateNode);
+              nodes[idToIndex[delegateNode.id]] = delegateNode;
+            }
+          });
+        }
+
+        resolve(nodes);
       });
     });
   }
@@ -141,10 +134,11 @@ export default class Node {
   }
 
   async _updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
+    const nodeId = this._id(id);
     return new Promise(async (resolve, reject) => {
-      this.redis.watch(id);
+      this.redis.watch(nodeId);
       const updateId = await counter(this.redis);
-      this.redis.get(id, (err, node) => {
+      this.redis.get(nodeId, (err, node) => {
         if (err) {
           reject(err);
           return;
@@ -166,7 +160,7 @@ export default class Node {
           });
         }
 
-        multi.set(id, JSON.stringify(newNode));
+        multi.set(nodeId, JSON.stringify(newNode));
 
         multi.exec(async (err, result) => {
           if (err) {
@@ -190,7 +184,7 @@ export default class Node {
   async deleteNode(id: string) {
     return new Promise(async (resolve, reject) => {
       await this.delegate.deleteNode(id);
-      this.redis.set(id, 'MISSING', (err) => {
+      this.redis.set(this._id(id), 'MISSING', (err) => {
         if (err) {
           reject(err);
           return;

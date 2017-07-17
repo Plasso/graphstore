@@ -1,6 +1,5 @@
 /* @flow */
 
-import redis from 'redis';
 import { MemoryEdgeDelegate } from '../src';
 
 test('it returns the edge name', async () => {
