@@ -17,6 +17,10 @@ afterEach((done) => {
   client.flushdb(done);
 });
 
+beforeEach((done) => {
+  client.flushdb(done);
+});
+
 afterAll(() => {
   client.end(true);
 });
