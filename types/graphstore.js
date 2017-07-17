@@ -1,8 +1,8 @@
 type EdgeRecord = {
   id: number;
-  leftType: string;
+  leftNodeType: string;
   leftNodeId: string;
-  rightType: string;
+  rightNodeType: string;
   rightNodeId: string;
 };
 

@@ -17,12 +17,12 @@ export default class MemoryEdgeDelegate implements EdgeDelegate {
     return this.edges[leftId] ? this.edges[leftId].length : 0;
   }
 
-  async createEdge(leftNodeId: string, rightNodeId: string) {
+  async createEdge(leftNodeType:string, leftNodeId: string, rightNodeType: string, rightNodeId: string) {
     this.edges[leftNodeId] = this.edges[leftNodeId] || [];
 
     const id = this.edges[leftNodeId].length;
 
-    this.edges[leftNodeId].push({ id, leftNodeId, rightNodeId });
+    this.edges[leftNodeId].push({ id, leftNodeType, leftNodeId, rightNodeType, rightNodeId });
 
     return id.toString(32);
   }
@@ -35,12 +35,14 @@ export default class MemoryEdgeDelegate implements EdgeDelegate {
     const length = this.edges[leftId].length;
     const endIndex = length - offset;
     const startIndex = length - limit;
+
     return this.edges[leftId].slice(startIndex, endIndex).reverse();
   }
 
   async getEdgesAfterId(leftId: string, { after, first }: EdgeAfterFirst) {
     const offset = parseInt(after, 32) + 1;
     const start = offset || 0;
+
     return this.edges[leftId].slice(start, start + first);
   }
 
@@ -49,6 +51,7 @@ export default class MemoryEdgeDelegate implements EdgeDelegate {
     const offset = parseInt(before, 32);
     const endIndex = length - (length - offset);
     const startIndex = endIndex - (last || 0);
+
     return this.edges[leftId].slice(startIndex, endIndex).reverse();
   }
 }

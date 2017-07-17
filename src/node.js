@@ -10,7 +10,7 @@ export default class Node {
     this.delegate = delegate;
   }
 
-  async _createNode(id: string, data: {}) {
+  _createNode(id: string, data: {}) {
     return new Promise((resolve, reject) => {
       this.redis.get(id, (err, node) => {
         if (err) {
@@ -64,13 +64,12 @@ export default class Node {
     const id = await this.delegate.createNode(data);
     await this._createNode(id, data);
 
-    return `${this.delegate.getNodeType()}_${id}`;
+    return id;
   }
 
   async readNode(id: string) {
-    const [_, nodeId] = id.split('_');
     return new Promise((resolve, reject) => {
-      this.redis.get(nodeId, async (err, node) => {
+      this.redis.get(id, async (err, node) => {
         if (err) {
           reject(err);
           return;
@@ -81,9 +80,9 @@ export default class Node {
         }
 
         if (node == null) {
-          const newNode = await this.delegate.readNode(nodeId);
+          const newNode = await this.delegate.readNode(id);
           if (newNode) {
-            this._createNode(nodeId, newNode);
+            this._createNode(id, newNode);
             node = JSON.stringify(newNode);
           }
         }
@@ -106,12 +105,8 @@ export default class Node {
   }
 
   async readNodes(ids: Array<string>) {
-    const nodeIds = ids.map((id) => {
-      const [_, nodeId] = id.split('_');
-      return nodeId;
-    });
     return new Promise((resolve, reject) => {
-      this.redis.mget(nodeIds, (err, nodes) => {
+      this.redis.mget(ids, (err, nodes) => {
         if (err) {
           reject(err);
           return;
@@ -133,11 +128,10 @@ export default class Node {
 
   async updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
     let tries = 0;
-    const [_, nodeId] = id.split('_');
 
     while(tries < 3) {
       try {
-        await this._updateNode(nodeId, updates, deletes);
+        await this._updateNode(id, updates, deletes);
         return;
       } catch (e) {
         tries = tries + 1;
@@ -194,10 +188,9 @@ export default class Node {
   }
 
   async deleteNode(id: string) {
-    const [_, nodeId] = id.split('_');
     return new Promise(async (resolve, reject) => {
-      await this.delegate.deleteNode(nodeId);
-      this.redis.set(nodeId, 'MISSING', (err) => {
+      await this.delegate.deleteNode(id);
+      this.redis.set(id, 'MISSING', (err) => {
         if (err) {
           reject(err);
           return;

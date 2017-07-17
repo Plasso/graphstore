@@ -1,23 +1,29 @@
 /* @flow */
 
+import type Node from './node';
+
 export default class Edge {
   redis: RedisClient;
   delegate: EdgeDelegate;
-  constructor(redis: RedisClient, delegate: EdgeDelegate) {
+  leftNode: Node;
+  rightNode: Node;
+  constructor(redis: RedisClient, delegate: EdgeDelegate, leftNode: Node, rightNode: Node) {
     this.redis = redis;
     this.delegate = delegate;
+    this.leftNode = leftNode;
+    this.rightNode = rightNode;
   }
 
   static MAX_BATCH = 50;
 
   async createEdge(leftNodeId: string, rightNodeId: string) {
-    return this.delegate.createEdge(leftNodeId, rightNodeId);
+    return this.delegate.createEdge(this.leftNode.getNodeType(), leftNodeId, this.rightNode.getNodeType(), rightNodeId);
   }
 
   async _updateCountRec(leftId: string) {
     return new Promise(async (resolve, reject) => {
       const name = await this.delegate.edgeName(leftId);
-      const counterName = `${name}_${leftId}_count`;
+      const counterName = `${name}_count`;
       this.redis.watch(counterName);
       this.redis.get(counterName, async (err, count) => {
         if (err) {
@@ -143,9 +149,8 @@ export default class Edge {
     });
   }
 
-  async _overlapsCache(leftId: string, { after, first }: { after: string, first: number }) {
-    const name = await this.delegate.edgeName(leftId);
-    const edgeName = `${name}_${leftId}`;
+  async _primeCache(leftId: string, { after, first }: { after: string, first: number }) {
+    const edgeName = await this.delegate.edgeName(leftId);
 
     let rank;
     if (after != null) {
@@ -187,7 +192,7 @@ export default class Edge {
     if (last || before) {
       return this._readLast(leftId, { last, before });
     } else {
-      const inCache = await this._overlapsCache(leftId, { first, after });
+      const inCache = await this._primeCache(leftId, { first, after });
       if (inCache) {
         return this._readFirst(leftId, { first, after });
       } else {
