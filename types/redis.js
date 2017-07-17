@@ -30,6 +30,7 @@ interface RedisClient {
   incr(name: string, cb: RedisDataCallback): void;
   watch(id: string): void;
   flushdb(cb: RedisErrorCallback): void;
+  flushall(cb: RedisErrorCallback): void;
   once(name: string, cb: RedisCallback): void;
   end(force: boolean): void;
   unwatch(id: string): void;

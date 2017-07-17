@@ -188,9 +188,55 @@ export default class Edge {
     });
   }
 
+  async _primeCacheReverse(leftId: string, { before, last }: { before: string, last: number }) {
+    const name = await this.delegate.edgeName(leftId);
+    const edgeName = `${name}_rev`;
+
+    let rank;
+    if (before != null) {
+      rank = await this._getRankOfEdgeItem(edgeName, before);
+      if (rank == null) {
+        return false;
+      }
+    } else {
+      rank = 0;
+    }
+
+    const count = await this._getCountOfEdge(edgeName);
+
+    if (rank + last <= count) {
+      return true;
+    }
+
+    const edges = await this.delegate.getEdgesBackwards(leftId, { offset: rank + count, limit: Edge.MAX_BATCH });
+
+    const prefix = [edgeName];
+
+    edges.forEach((x) => {
+      prefix.push(x.id);
+      prefix.push(JSON.stringify(x));
+    });
+
+    return new Promise((resolve, reject) => {
+      this.redis.zadd(prefix, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(true);
+      });
+    });
+  }
+
   async readEdges(leftId: string, { first, last, after, before }: { first: number, last: number, after: string, before: string }) {
+    const pageInfo = { hasNextPage: false, hasPreviousPage: false };
     if (last || before) {
-      return this._readLast(leftId, { last, before });
+      const inCache = await this._primeCacheReverse(leftId, { last, before });
+      if (inCache) {
+        return this._readLast(leftId, { last, before });
+      } else {
+        return this.delegate.getEdgesBeforeId(leftId, { last, before });
+      }
     } else {
       const inCache = await this._primeCache(leftId, { first, after });
       if (inCache) {

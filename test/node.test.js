@@ -11,16 +11,17 @@ beforeAll((done) => {
 });
 
 beforeEach((done) => {
-  client.flushdb(done);
+  client.flushall(done);
 });
 
 afterEach((done) => {
-  client.flushdb(done);
+  client.flushall(done);
 });
 
 afterAll(() => {
   client.end(true);
 });
+
 
 test('can create a node', async () => {
   const gs = new Node(client, new MemoryNodeDelegate('test_node'));

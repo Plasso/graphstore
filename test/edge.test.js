@@ -13,12 +13,12 @@ beforeAll((done) => {
   client.once('ready', done);
 });
 
-afterEach((done) => {
-  client.flushdb(done);
+beforeEach((done) => {
+  client.flushall(done);
 });
 
-beforeEach((done) => {
-  client.flushdb(done);
+afterEach((done) => {
+  client.flushall(done);
 });
 
 afterAll(() => {
