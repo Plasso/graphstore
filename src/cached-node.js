@@ -2,19 +2,19 @@
 
 import counter from './counter';
 
-export default class Node {
+export default class CachedNode implements NodeT {
   redis: RedisClient;
-  delegate: NodeDelegate;
-  constructor(redis: RedisClient, delegate: NodeDelegate) {
+  delegate: NodeT;
+  constructor(redis: RedisClient, delegate: NodeT) {
     this.redis = redis;
     this.delegate = delegate;
   }
 
   _id(id: string) {
-    return `${this.delegate.getNodeType()}_${id}`;
+    return `${this.delegate.getName()}_${id}`;
   }
 
-  _createNode(id: string, data: {}) {
+  _create(id: string, data: {}) {
     return new Promise((resolve, reject) => {
       this.redis.get(this._id(id), (err, node) => {
         if (err) {
@@ -64,19 +64,14 @@ export default class Node {
     });
   }
 
-  async createNode(data: {}) {
-    const id = await this.delegate.createNode(data);
-    await this._createNode(id, data);
+  async create(data: {}) {
+    const id = await this.delegate.create(data);
+    await this._create(id, data);
 
     return id;
   }
 
-  async readNode(id: string) {
-    const nodes = await this.readNodes([id]);
-    return nodes[0];
-  }
-
-  async readNodes(ids: Array<string>) {
+  async read(ids: Array<string>) {
     const nodeIds = ids.map((id) => this._id(id));
     return new Promise((resolve, reject) => {
       this.redis.mget(nodeIds, async (err, nodes) => {
@@ -92,9 +87,9 @@ export default class Node {
         });
         const missingIds = [];
         nodes.forEach((node, idx) => {
+          nodes[idx] = undefined;
           if (node === null) {
             missingIds.push(ids[idx]);
-            nodes[idx] = 'MISSING';
           } else if (node !== 'MISSING') {
             try {
               nodes[idx] = JSON.parse(node);
@@ -105,10 +100,10 @@ export default class Node {
         });
 
         if (missingIds.length > 0) {
-          const delegateNodes = await this.delegate.readNodes(missingIds);
+          const delegateNodes = await this.delegate.read(missingIds);
           delegateNodes.forEach((delegateNode) => {
             if (delegateNode) {
-              this._createNode(delegateNode.id, delegateNode);
+              this._create(delegateNode.id, delegateNode);
               nodes[idToIndex[delegateNode.id]] = delegateNode;
             }
           });
@@ -119,12 +114,12 @@ export default class Node {
     });
   }
 
-  async updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
+  async update(id: string, node: NodeDataT) {
     let tries = 0;
 
     while(tries < 3) {
       try {
-        await this._updateNode(id, updates, deletes);
+        await this._update(id, node);
         return;
       } catch (e) {
         tries = tries + 1;
@@ -133,34 +128,25 @@ export default class Node {
     throw new Error(`Could not update node ${id}`);
   }
 
-  async _updateNode(id: string, updates: Array<{}>, deletes: Array<{}>) {
+  async _update(id: string, node: NodeDataT) {
     const nodeId = this._id(id);
     return new Promise(async (resolve, reject) => {
       this.redis.watch(nodeId);
       const updateId = await counter(this.redis);
-      this.redis.get(nodeId, (err, node) => {
+      this.redis.get(nodeId, (err, cachedNode) => {
         if (err) {
           reject(err);
           return;
         }
 
-        if (node === 'MISSING') {
+        if (cachedNode === 'MISSING') {
           reject(new Error(`Id ${id} does not exist`));
           return;
         }
 
-        const obj = JSON.parse(node);
         const multi = this.redis.multi();
 
-        const newNode = {...obj, ...updates};
-
-        if (deletes) {
-          deletes.forEach((name) => {
-            delete newNode[name];
-          });
-        }
-
-        multi.set(nodeId, JSON.stringify(newNode));
+        multi.set(nodeId, JSON.stringify(node));
 
         multi.exec(async (err, result) => {
           if (err) {
@@ -173,7 +159,7 @@ export default class Node {
             return;
           }
 
-          await this.delegate.updateNode(id, newNode, updateId);
+          await this.delegate.update(id, node, updateId);
 
           resolve()
         });
@@ -181,9 +167,9 @@ export default class Node {
     });
   }
 
-  async deleteNode(id: string) {
+  async delete(id: string) {
     return new Promise(async (resolve, reject) => {
-      await this.delegate.deleteNode(id);
+      await this.delegate.delete(id);
       this.redis.set(this._id(id), 'MISSING', (err) => {
         if (err) {
           reject(err);
@@ -195,7 +181,7 @@ export default class Node {
     });
   }
 
-  getNodeType() {
-    return this.delegate.getNodeType();
+  getName() {
+    return this.delegate.getName();
   }
 }

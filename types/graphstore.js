@@ -1,39 +1,41 @@
-type EdgeRecord = {
+type EdgeDataT = {
   id: number;
-  leftNodeId: string;
-  rightNodeId: string;
+  nodeId: string;
 };
 
-type EdgeLimitOffset = {
+type EdgeLimitOffsetT = {
   offset: number;
   limit: number;
 };
 
-type EdgeAfterFirst = {
-  after: string;
+type EdgeFirstAfterT = {
   first: number;
+  after: string;
 };
 
-type EdgeBeforeLast = {
-  before: string;
-  last: number;
+type NodeDataT = {
+  id: string;
 };
 
-interface EdgeDelegate {
-  edgeName(leftId: string): Promise<string>;
-  createEdge(leftNodeId: string, rightNodeId: string): Promise<string>;
-  edgeCount(leftId: string): Promise<number>;
-  getEdgesForward(leftId: string, limitOffset: EdgeLimitOffset): Promise<Array<EdgeRecord>>;
-  getEdgesBackwards(leftId: string, limitOffset: EdgeLimitOffset): Promise<Array<EdgeRecord>>;
-  getEdgesAfterId(leftId: string, afterFirst: EdgeAfterFirst): Promise<Array<EdgeRecord>>;
-  getEdgesBeforeId(leftId: string, afterFirst: EdgeBeforeLast): Promise<Array<EdgeRecord>>;
+type EdgesT = {
+  hasNextPage: boolean;
+  edges: Array<EdgeDataT>;
+};
+
+interface NodeT {
+  create(data: {}): Promise<string>;
+  read(ids: Array<string>): Promise<Array<NodeDataT>>;
+  update(id: string, node: NodeDataT, ?updateId: number): Promise<void>;
+  delete(id: string): Promise<void>;
+  getName(): string;
 }
 
-interface NodeDelegate {
-  createNode(data: {}): Promise<string>;
-  readNodes(ids: Array<string>): Promise<Array<{id: string}>>;
-  updateNode(id: string, newNode: { id: string }, updateId: string): Promise<void>;
-  deleteNode(id: string): Promise<void>;
-  getNodeType(): string;
+interface EdgeT {
+  getName(): string;
+  create(leftNodeId: string, rightNodeId: string): Promise<number>;
+  delete(id: string): Promise<void>;
+  getCount(leftId: string): Promise<number>;
+  getLimitOffset(leftId: string, limitOffset: EdgeLimitOffsetT): Promise<EdgesT>;
+  getFirstAfter(leftId: string, firstAfter: EdgeFirstAfterT): Promise<EdgesT>;
 }
 

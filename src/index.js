@@ -1,6 +1,7 @@
-import Edge from './edge';
-import Node from './node';
-import MemoryEdgeDelegate from './memory-edge-delegate';
+import CachedEdge from './cached-edge';
+import CachedNode from './cached-node';
+import MemoryEdge from './memory-edge';
+import MemoryNode from './memory-node';
 
-module.exports = { Edge, Node, MemoryEdgeDelegate };
+module.exports = { CachedEdge, CachedNode, MemoryEdge, MemoryNode };
 

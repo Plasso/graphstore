@@ -35,6 +35,7 @@ interface RedisClient {
   end(force: boolean): void;
   unwatch(id: string): void;
   zrank(name: string, id: string, cb: RedisDataCallback): void;
+  zcount(name: string, low: string|number, high: string|number, cb: RedisDataCallback): void;
   zcard(name: string, cb: RedisDataCallback): void;
   multi(): RedisMultiClient;
 }
