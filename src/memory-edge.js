@@ -2,6 +2,8 @@
 
 export default class MemoryEdge implements EdgeT {
   name: string;
+  forward: boolean;
+  id: number;
   edges: { [leftId: string]: Array<EdgeDataT> };
 
   constructor(name: string, forward: boolean = true) {
@@ -53,7 +55,8 @@ export default class MemoryEdge implements EdgeT {
     };
   }
 
-  async delete(leftId: string, id: string) {
-    this.edges[leftId].splice(parseInt(id, 32), 1);
+  async delete(leftId: string, id: number) {
+    const index = this.edges[leftId].findIndex((edge) => edge.id === id);
+    this.edges[leftId].splice(index, 1);
   }
 }

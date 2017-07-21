@@ -2,7 +2,7 @@
 
 export default class EdgeRegistry {
   names: {[name: string]: { edge: EdgeT, node: NodeT} };
-  static types = {};
+  static names = {};
   static register(edge: EdgeT, node: NodeT) {
     this.names[edge.getName()] = { edge, node };
   }

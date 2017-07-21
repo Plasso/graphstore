@@ -4,7 +4,7 @@ export default class NodeRegistry {
   names: {[name: string]: NodeT };
   static names = {};
   static register(node: NodeT) {
-    this.types[node.getName()] = node;
+    this.names[node.getName()] = node;
   }
 
   static getNodeTypeByName(name: string) {

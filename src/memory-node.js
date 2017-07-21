@@ -1,7 +1,7 @@
 /* @flow */
 
 export default class MemoryNode implements NodeT {
-  type: string;
+  name: string;
   id: number;
   nodes: { [nodeId: number]: { id: string } };
   constructor(name: string) {
@@ -15,12 +15,11 @@ export default class MemoryNode implements NodeT {
   }
 
   async create(data: {}) {
-    const stringId = this.id.toString(32);
+    const id = this.id;
+    const stringId = id.toString(32);
     this.id += 1;
 
-    data.id = stringId;
-
-    this.nodes[stringId] = data;
+    this.nodes[id] = { id: stringId, ...data };
 
     return stringId;
   }
@@ -30,7 +29,7 @@ export default class MemoryNode implements NodeT {
   }
 
   async delete(id: string) {
-    delete this.nodes[id];
+    delete this.nodes[parseInt(id, 32)];
   }
 
   async update(id: string, node: NodeDataT /* , updateId */) {

@@ -25,7 +25,7 @@ type EdgesT = {
 interface NodeT {
   create(data: {}): Promise<string>;
   read(ids: Array<string>): Promise<Array<NodeDataT>>;
-  update(id: string, node: NodeDataT, ?updateId: number): Promise<void>;
+  update(id: string, node: NodeDataT, updateId: ?number): Promise<void>;
   delete(id: string): Promise<void>;
   getName(): string;
 }
@@ -33,7 +33,7 @@ interface NodeT {
 interface EdgeT {
   getName(): string;
   create(leftNodeId: string, rightNodeId: string): Promise<number>;
-  delete(id: string): Promise<void>;
+  delete(leftId: string, id: number): Promise<void>;
   getCount(leftId: string): Promise<number>;
   getFirstAfter(leftId: string, firstAfter: EdgeFirstAfterT): Promise<EdgesT>;
 }

@@ -15,13 +15,14 @@ interface RedisMultiClient {
   mget(ids: Array<string>, cb: RedisDataCallback): void;
   set(id: string, data: string, cb: RedisErrorCallback): void;
   setnx(id: string, data: string, cb: RedisErrorCallback): void;
+  zadd(name: string, value: string|number, cb: RedisErrorCallback): void;
   exec(RedisDataCallback): void;
 }
 
 interface RedisClient {
   get(id: string, cb: RedisDataCallback): void;
   mget(ids: Array<string>, cb: RedisDataCallback): void;
-  set(id: string, data: string, cb: RedisErrorCallback): void;
+  set(id: string, data: string|number, cb: RedisErrorCallback): void;
   setnx(id: string, data: string, cb: RedisErrorCallback): void;
   zadd(name: string, nx: string, id: string, data: string, cb: RedisDataCallback): void;
   zadd(args: Array<any>, cb: RedisErrorCallback): void;
@@ -36,6 +37,9 @@ interface RedisClient {
   unwatch(id: string): void;
   zrank(name: string, id: string, cb: RedisDataCallback): void;
   zcount(name: string, low: string|number, high: string|number, cb: RedisDataCallback): void;
+  zrange(name: string, start: number, end: number, cb: RedisDataCallback): void;
+  zrevrange(name: string, start: number, end: number, cb: RedisDataCallback): void;
+  zremrangebyscore(name: string, min: number, max: number, cb: RedisDataCallback): void;
   zcard(name: string, cb: RedisDataCallback): void;
   multi(): RedisMultiClient;
 }

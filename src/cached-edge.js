@@ -3,14 +3,11 @@
 export default class CachedEdge {
   redis: RedisClient;
   delegate: EdgeT;
-  left: number;
-  right: number;
-  constructor(redis: RedisClient, delegate: EdgeT, options = {}) {
+  forward: boolean;
+  constructor(redis: RedisClient, delegate: EdgeT, options: { reverse?: boolean } = {}) {
     this.redis = redis;
     this.delegate = delegate;
     this.forward = options.reverse ? false : true;
-    this.hi = -Infinity;
-    this.low = +Infinity;
   }
 
   static MAX_BATCH = 50;
@@ -19,7 +16,7 @@ export default class CachedEdge {
     return `${leftId}_${this.delegate.getName()}_watermark`;
   }
 
-  async _get(key: string): string {
+  async _get(key: string) {
     return new Promise((resolve, reject) => {
       this.redis.get(key, (err, data) => {
         if (err) {
@@ -62,7 +59,7 @@ export default class CachedEdge {
       });
     } catch(err) {
       this.redis.unwatch(watermarkName);
-      reject(err);
+      throw(err);
     }
   }
 
@@ -80,7 +77,7 @@ export default class CachedEdge {
     throw new Error(`Could not update cache`);
   }
 
-  async _read(leftId: string, { after, first }: { after: string, first: number }) {
+  async _read(leftId: string, { after, first }: EdgeFirstAfterT) {
     const edgeName = this._name(leftId);
     let min;
     let max;
@@ -134,7 +131,7 @@ export default class CachedEdge {
     });
   }
 
-  async getFirstAfter(leftId: string, { after, first }: { after: string, first: number }) {
+  async getFirstAfter(leftId: string, { after, first }: EdgeFirstAfterT) {
     const edgeName = this._name(leftId);
 
     let rank;
@@ -182,12 +179,22 @@ export default class CachedEdge {
     });
   }
 
-  async deleteEdge(leftId: string, id: number) {
+  async delete(leftId: string, id: number) {
+    await this.delegate.delete(leftId, id);
+    return new Promise((resolve, reject) => {
+      this.redis.zremrangebyscore(this._name(leftId), id, id, (err, count) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
   }
 
   async _updateCountRec(leftId: string) {
     return new Promise(async (resolve, reject) => {
-      const name = this._name();
+      const name = this._name(leftId);
       const counterName = `${name}_count`;
       this.redis.watch(counterName);
       this.redis.get(counterName, async (err, count) => {
@@ -239,7 +246,7 @@ export default class CachedEdge {
   }
 
   async getCount(leftId: string) {
-    const name = this._name();
+    const name = this._name(leftId);
     return new Promise((resolve, reject) => {
       this.redis.get(`${name}_count`, async (err, count) => {
         if (err) {

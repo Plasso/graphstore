@@ -15,8 +15,8 @@ test('it ruturns empty array when no edges', async () => {
 });
 
 test('it can convert edges to a connection', async () => {
-  const node1 = { test: 'node1' };
-  const node2 = { test: 'node2' };
+  const node1 = { id: null, test: 'node1' };
+  const node2 = { id: null, test: 'node2' };
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 
@@ -44,8 +44,8 @@ test('it can convert edges to a connection', async () => {
 });
 
 test('it can convert edges to a connection with hasNextPage', async () => {
-  const node1 = { test: 'node1' };
-  const node2 = { test: 'node2' };
+  const node1 = { id: null, test: 'node1' };
+  const node2 = { id: null, test: 'node2' };
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 

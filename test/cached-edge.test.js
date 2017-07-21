@@ -74,6 +74,21 @@ test('getFirstAfter returns hasNextPage if more edges', async () => {
   expect(page.hasNextPage).toBe(true);
 });
 
+test('it can delete edges', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName);
+  const edge = new CachedEdge(client, ed);
+
+  await ed.create('leftId', 'rightId1');
+  const id = await ed.create('leftId', 'rightId2');
+  await ed.create('leftId', 'rightId2');
+  await edge.delete('leftId', id);
+
+  const page = await edge.getFirstAfter('leftId', { first: 3});
+
+  expect(page.edges.length).toBe(2);
+});
+
 test('creating an edge returns an id', async () => {
   const edgeName = 'test_edge';
   const edge = new CachedEdge(client, new MemoryEdge(edgeName));
