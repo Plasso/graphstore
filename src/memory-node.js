@@ -33,7 +33,7 @@ export default class MemoryNode implements NodeT {
   }
 
   async update(id: string, node: NodeDataT /* , updateId */) {
-    this.nodes[parseInt(id, 32)] = node;
+    this.nodes[parseInt(id, 32)] = { id, ...node };
   }
 }
 

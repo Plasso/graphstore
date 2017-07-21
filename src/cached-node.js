@@ -30,7 +30,7 @@ export default class CachedNode implements NodeT {
         let json;
 
         try {
-          json = JSON.stringify(data);
+          json = JSON.stringify({ id, ...data });
         } catch (e) {
           reject(e);
           return;
@@ -101,12 +101,14 @@ export default class CachedNode implements NodeT {
 
         if (missingIds.length > 0) {
           const delegateNodes = await this.delegate.read(missingIds);
-          delegateNodes.forEach((delegateNode) => {
+          const promises = delegateNodes.map((delegateNode) => {
             if (delegateNode) {
-              this._create(delegateNode.id, delegateNode);
               nodes[idToIndex[delegateNode.id]] = delegateNode;
+              return this._create(delegateNode.id, delegateNode);
             }
+            return Promise.resolve();
           });
+          await Promise.all(promises);
         }
 
         resolve(nodes);
@@ -146,7 +148,7 @@ export default class CachedNode implements NodeT {
 
         const multi = this.redis.multi();
 
-        multi.set(nodeId, JSON.stringify(node));
+        multi.set(nodeId, JSON.stringify({ id, ...node }));
 
         multi.exec(async (err, result) => {
           if (err) {

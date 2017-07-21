@@ -15,8 +15,8 @@ test('it ruturns empty array when no edges', async () => {
 });
 
 test('it can convert edges to a connection', async () => {
-  const node1 = { id: null, test: 'node1' };
-  const node2 = { id: null, test: 'node2' };
+  const node1 = { test: 'node1' };
+  const node2 = { test: 'node2' };
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 
@@ -37,15 +37,15 @@ test('it can convert edges to a connection', async () => {
     hasNextPage: false,
     hasPreviousPage: false,
     edges: [
-      { cursor: edge1Id.toString(32), node: node1 },
-      { cursor: edge2Id.toString(32), node: node2 },
+      { cursor: edge1Id.toString(32), node: { id: node1Id, ...node1 } },
+      { cursor: edge2Id.toString(32), node: { id: node2Id, ...node2 } },
     ],
   });
 });
 
 test('it can convert edges to a connection with hasNextPage', async () => {
-  const node1 = { id: null, test: 'node1' };
-  const node2 = { id: null, test: 'node2' };
+  const node1 = { test: 'node1' };
+  const node2 = { test: 'node2' };
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 
@@ -66,7 +66,7 @@ test('it can convert edges to a connection with hasNextPage', async () => {
     hasNextPage: true,
     hasPreviousPage: false,
     edges: [
-      { cursor: edge1Id.toString(32), node: node1 },
+      { cursor: edge1Id.toString(32), node: { id: node1Id, ...node1 } },
     ],
   });
 });

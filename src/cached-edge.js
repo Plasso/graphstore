@@ -38,6 +38,10 @@ export default class CachedEdge {
       const watermark = parseInt(watermarkString, 10);
 
       const multi = this.redis.multi();
+      const name = this._name(leftNodeId);
+      const counterName = `${name}_count`;
+
+      multi.incr(counterName);
 
       if (this.forward) {
         if (id < watermark) {
@@ -187,6 +191,11 @@ export default class CachedEdge {
           reject(err);
           return;
         }
+        const name = this._name(leftId);
+        const counterName = `${name}_count`;
+
+        this.redis.decr(counterName);
+
         resolve();
       });
     });
@@ -258,7 +267,7 @@ export default class CachedEdge {
           resolve(newCount);
           return;
         }
-        resolve(count);
+        resolve(parseInt(count));
       });
     });
   }

@@ -7,7 +7,7 @@ let client;
 let nodes = {};
 
 beforeEach((done) => {
-  client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
+  client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379/0');
   client.once('ready', () => {
     client.flushdb(done);
   });
@@ -72,6 +72,32 @@ test('getFirstAfter returns hasNextPage if more edges', async () => {
   const page = await edge.getFirstAfter('leftId', { first: 1 });
 
   expect(page.hasNextPage).toBe(true);
+});
+
+test('creating an edge increases count', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName);
+  const edge = new CachedEdge(client, ed);
+  await edge.create('leftId', 'rightId1');
+  const count1 = await edge.getCount('leftId');
+  await edge.create('leftId', 'rightId2');
+  const count2 = await edge.getCount('leftId');
+
+  expect(count1).toBe(1);
+  expect(count2).toBe(2);
+});
+
+test('deleting an edge decreases count', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName);
+  const edge = new CachedEdge(client, ed);
+  const id = await edge.create('leftId', 'rightId1');
+  const count1 = await edge.getCount('leftId');
+  await edge.delete('leftId', id);
+  const count2 = await edge.getCount('leftId');
+
+  expect(count1).toBe(1);
+  expect(count2).toBe(0);
 });
 
 test('it can delete edges', async () => {
