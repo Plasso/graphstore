@@ -10,7 +10,7 @@ type EdgeLimitOffsetT = {
 
 type EdgeFirstAfterT = {
   first: number;
-  after: string;
+  after: number;
 };
 
 type NodeDataT = {
@@ -35,7 +35,6 @@ interface EdgeT {
   create(leftNodeId: string, rightNodeId: string): Promise<number>;
   delete(id: string): Promise<void>;
   getCount(leftId: string): Promise<number>;
-  getLimitOffset(leftId: string, limitOffset: EdgeLimitOffsetT): Promise<EdgesT>;
   getFirstAfter(leftId: string, firstAfter: EdgeFirstAfterT): Promise<EdgesT>;
 }
 

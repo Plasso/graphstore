@@ -1,7 +1,5 @@
 /* @flow */
 
-import type Node from './node';
-
 export default class CachedEdge {
   redis: RedisClient;
   delegate: EdgeT;
@@ -10,32 +8,83 @@ export default class CachedEdge {
   constructor(redis: RedisClient, delegate: EdgeT, options = {}) {
     this.redis = redis;
     this.delegate = delegate;
-    this.forwards = options.reverse ? false : true;
+    this.forward = options.reverse ? false : true;
     this.hi = -Infinity;
     this.low = +Infinity;
   }
 
   static MAX_BATCH = 50;
 
+  _watermark(leftId: string) {
+    return `${leftId}_${this.delegate.getName()}_watermark`;
+  }
+
+  async _get(key: string): string {
+    return new Promise((resolve, reject) => {
+      this.redis.get(key, (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        resolve(data);
+      });
+    });
+  }
+
+  async _create(id: number, leftNodeId: string, rightNodeId: string) {
+    const watermarkName = this._watermark(leftNodeId);
+    this.redis.watch(watermarkName);
+
+    try {
+      const watermarkString = await this._get(watermarkName);
+      const watermark = parseInt(watermarkString, 10);
+
+      const multi = this.redis.multi();
+
+      if (this.forward) {
+        if (id < watermark) {
+          multi.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+        }
+      } else {
+        if (id > watermark) {
+          multi.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+        }
+      }
+      return new Promise((resolve, reject) => {
+        multi.exec((err, result) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(id);
+        });
+      });
+    } catch(err) {
+      this.redis.unwatch(watermarkName);
+      reject(err);
+    }
+  }
+
   async create(leftNodeId: string, rightNodeId: string) {
     const id = await this.delegate.create(leftNodeId, rightNodeId);
-    if (this.forward) {
-      if (id < this.hi) {
-        // add to edge cache
-      }
-    } else {
-      if (id > this.low) {
-        // add to edge cache
+    let tries = 0;
+
+    while(tries < 3) {
+      try {
+        return this._create(id, leftNodeId, rightNodeId);
+      } catch (e) {
+        tries = tries + 1;
       }
     }
-    return id;
+    throw new Error(`Could not update cache`);
   }
 
   async _read(leftId: string, { after, first }: { after: string, first: number }) {
     const edgeName = this._name(leftId);
     let min;
     let max;
-    if (start) {
+    if (after != null) {
       min = `(${after}`;
     } else {
       min = this.forward ? -Infinity : +Infinity;
@@ -43,7 +92,7 @@ export default class CachedEdge {
 
     max = this.forward ? +Infinity : -Infinity;
 
-    const args = [edgeName, min, max, 'LIMIT', 0, Math.min(count, Edge.MAX_BATCH)];
+    const args = [edgeName, min, max, 'LIMIT', 0, Math.min(first, CachedEdge.MAX_BATCH)];
     return new Promise((resolve, reject) => {
       if (this.forward) {
         this.redis.zrangebyscore(args, (err, data) => {
@@ -57,14 +106,14 @@ export default class CachedEdge {
     });
   }
 
-  _getRankOfEdgeItem(name: string, id: string) {
+  _getRankOfEdgeItem(name: string, id: number) {
     return new Promise((resolve, reject) => {
       this.redis.zcount(name, -Infinity, `(${id}`, (err, rank) => {
         if (err) {
           reject(err);
           return;
         }
-        resolve(rank > 0 ? rank - 1 : null);
+        resolve(rank);
       });
     });
   }
@@ -85,27 +134,32 @@ export default class CachedEdge {
     });
   }
 
-  async read(leftId: string, { after, first }: { after: string, first: number }) {
+  async getFirstAfter(leftId: string, { after, first }: { after: string, first: number }) {
     const edgeName = this._name(leftId);
 
     let rank;
     if (after != null) {
       rank = await this._getRankOfEdgeItem(edgeName, after);
       if (rank == null) {
-        return false;
+        const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first });
+
+        return {
+          hasNextPage,
+          edges
+        };
       }
     } else {
       rank = 0;
     }
 
-    const count = await this._getCountOfEdge(edgeName);
+    const count = await this._getCountOfEdge(leftId);
 
     if (rank + first <= count) {
       const edges = await this._read(leftId, { after, first });
       return { hasNextPage: rank + first < count, edges };
     }
 
-    const { hasNextPage, edges } = await this.delegate.getLimitOffset(leftId, { offset: rank + count, limit: Edge.MAX_BATCH });
+    const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first: CachedEdge.MAX_BATCH });
 
     const prefix = [edgeName];
 
@@ -114,11 +168,7 @@ export default class CachedEdge {
       prefix.push(JSON.stringify(x));
     });
 
-    if (this.forward) {
-      this.hi = edges[edges.length - 1].id;
-    } else {
-      this.low = edges[edges.length - 1].id;
-    }
+    this.redis.set(this._watermark(leftId), edges[edges.length - 1].id);
 
     return new Promise((resolve, reject) => {
       this.redis.zadd(prefix, (err) => {
@@ -126,12 +176,13 @@ export default class CachedEdge {
           reject(err);
           return;
         }
-        resolve({ hasNextPage, edges });
+        const newHasNextPage = first < edges.length;
+        resolve({ hasNextPage: newHasNextPage, edges: edges.slice(0, first) });
       });
     });
   }
 
-  async deleteEdge(id: number) {
+  async deleteEdge(leftId: string, id: number) {
   }
 
   async _updateCountRec(leftId: string) {
@@ -156,7 +207,7 @@ export default class CachedEdge {
 
         multi.set(counterName, newCount.toString());
 
-        multi.exec(async (err, result) => {
+        multi.exec((err, result) => {
           if (err) {
             reject(err);
             return;
@@ -204,5 +255,4 @@ export default class CachedEdge {
       });
     });
   }
-
 }
