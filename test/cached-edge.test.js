@@ -6,20 +6,14 @@ import redis from 'redis';
 let client;
 let nodes = {};
 
-beforeAll((done) => {
-  client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
-  client.once('ready', done);
-});
-
 beforeEach((done) => {
-  client.flushall(done);
+  client = redis.createClient('redis://redis-test.wi32hd.0001.usw2.cache.amazonaws.com:6379');
+  client.once('ready', () => {
+    client.flushdb(done);
+  });
 });
 
-afterEach((done) => {
-  client.flushall(done);
-});
-
-afterAll(() => {
+afterEach(() => {
   client.end(true);
 });
 

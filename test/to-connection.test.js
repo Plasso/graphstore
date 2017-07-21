@@ -37,8 +37,8 @@ test('it can convert edges to a connection', async () => {
     hasNextPage: false,
     hasPreviousPage: false,
     edges: [
-      { cursor: edge1Id, node: node1 },
-      { cursor: edge2Id, node: node2 },
+      { cursor: edge1Id.toString(32), node: node1 },
+      { cursor: edge2Id.toString(32), node: node2 },
     ],
   });
 });
@@ -66,7 +66,7 @@ test('it can convert edges to a connection with hasNextPage', async () => {
     hasNextPage: true,
     hasPreviousPage: false,
     edges: [
-      { cursor: edge1Id, node: node1 },
+      { cursor: edge1Id.toString(32), node: node1 },
     ],
   });
 });
