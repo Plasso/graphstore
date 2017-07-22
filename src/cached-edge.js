@@ -135,6 +135,51 @@ export default class CachedEdge {
     });
   }
 
+  async _updateEdgeCache(leftId: string, first: number, hasNextPage: boolean,  edges: EdgesT) {
+    const watermarkName = this._watermark(leftId);
+    this.redis.watch(watermarkName);
+    return new Promise((resolve, reject) => {
+      this.redis.get(watermarkName, async (err, watermarkString) => {
+        const multi = this.redis.multi();
+        const prefix = [this._name(leftId)];
+        const watermark = parseInt(watermarkString, 10);
+        let edgesToAdd;
+
+        if (!isNaN(watermark)) {
+          edgesToAdd = edges.filter((edge) => {
+            if (this.forward) {
+              return edge.id > watermark;
+            } else {
+              return edge.id < watermark;
+            }
+          });
+        } else {
+          edgesToAdd = edges;
+        }
+
+        edgesToAdd.forEach((x) => {
+          prefix.push(x.id);
+          prefix.push(JSON.stringify(x));
+        });
+
+        if (edgesToAdd.length > 0) {
+          multi.set(this._watermark(leftId), edgesToAdd[edgesToAdd.length - 1].id);
+          multi.zadd(prefix);
+        }
+
+        multi.exec((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          const newHasNextPage = first < edges.length;
+          const page = { hasNextPage: newHasNextPage || hasNextPage, edges: edges.slice(0, first) };
+          resolve(page);
+        });
+      });
+    });
+  }
+
   async getFirstAfter(leftId: string, { after, first }: EdgeFirstAfterT) {
     const edgeName = this._name(leftId);
 
@@ -142,6 +187,7 @@ export default class CachedEdge {
     if (after != null) {
       rank = await this._getRankOfEdgeItem(edgeName, after);
       if (rank == null) {
+        /* asking for something outside cache  */
         const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first });
 
         return {
@@ -155,32 +201,24 @@ export default class CachedEdge {
 
     const count = await this._getCountOfEdge(leftId);
 
-    if (rank + first <= count) {
+    if (rank + 1 + first <= count) {
       const edges = await this._read(leftId, { after, first });
       return { hasNextPage: rank + first < count, edges };
     }
 
     const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first: CachedEdge.MAX_BATCH });
 
-    const prefix = [edgeName];
+    let tries = 0;
 
-    edges.forEach((x) => {
-      prefix.push(x.id);
-      prefix.push(JSON.stringify(x));
-    });
-
-    this.redis.set(this._watermark(leftId), edges[edges.length - 1].id);
-
-    return new Promise((resolve, reject) => {
-      this.redis.zadd(prefix, (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        const newHasNextPage = first < edges.length;
-        resolve({ hasNextPage: newHasNextPage, edges: edges.slice(0, first) });
-      });
-    });
+    while(tries < 3) {
+      try {
+        const page = await this._updateEdgeCache(leftId, first, hasNextPage, edges);
+        return page;
+      } catch (e) {
+        tries = tries + 1;
+      }
+    }
+    throw new Error(`Could not update edge cache`);
   }
 
   async delete(leftId: string, id: number) {

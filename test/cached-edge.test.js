@@ -27,6 +27,7 @@ test('getFirstAfter returns cached edges added in order', async () => {
   await ed.create('leftId', 'rightId3');
   await ed.create('leftId', 'rightId4');
   await edge.getFirstAfter('leftId', { first: 4 });
+
   const page = await edge.getFirstAfter('leftId', { after, first: 2 });
 
   expect(page.edges[0]).toMatchObject({
@@ -37,6 +38,30 @@ test('getFirstAfter returns cached edges added in order', async () => {
   expect(page.edges[1]).toMatchObject({
     id: 2,
     nodeId: 'rightId3',
+  });
+});
+
+test('getFirstAfter can exend cache', async (done) => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName);
+  const edge = new CachedEdge(client, ed);
+
+  const after = await ed.create('leftId', 'rightId1');
+  await ed.create('leftId', 'rightId2');
+  await ed.create('leftId', 'rightId3');
+  await ed.create('leftId', 'rightId4');
+  await edge.getFirstAfter('leftId', { first: 4 });
+  client.set(edge._watermark('leftId'), 2);
+  client.zremrangebyscore(edge._name('leftId'), 3, +Infinity);
+
+  client.zrangebyscore(edge._name('leftId'), -Infinity, +Infinity, async (err, data) => {
+    expect(data.length).toBe(3);
+    await edge.getFirstAfter('leftId', { after, first: 3 });
+
+    client.zrangebyscore(edge._name('leftId'), -Infinity, +Infinity, (err, data2) => {
+      expect(data2.length).toBe(4);
+      done();
+    });
   });
 });
 
