@@ -203,7 +203,7 @@ export default class CachedEdge {
 
     if (rank + 1 + first <= count) {
       const edges = await this._read(leftId, { after, first });
-      return { hasNextPage: rank + first < count, edges };
+      return { hasNextPage: rank + 1 + first < count, edges };
     }
 
     const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first: CachedEdge.MAX_BATCH });
