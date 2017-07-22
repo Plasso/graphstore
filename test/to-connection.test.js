@@ -23,9 +23,6 @@ test('it can convert edges to a connection', async () => {
   const node1Id = await node.create(node1);
   const node2Id = await node.create(node2);
 
-  node1.id = node1Id;
-  node2.id = node2Id;
-
   const edge1Id = await edge.create('leftId', node1Id);
   const edge2Id = await edge.create('leftId', node2Id);
 
@@ -51,9 +48,6 @@ test('it can convert edges to a connection with hasNextPage', async () => {
 
   const node1Id = await node.create(node1);
   const node2Id = await node.create(node2);
-
-  node1.id = node1Id;
-  node2.id = node2Id;
 
   const edge1Id = await edge.create('leftId', node1Id);
   const edge2Id = await edge.create('leftId', node2Id);

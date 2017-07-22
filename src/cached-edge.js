@@ -135,7 +135,7 @@ export default class CachedEdge {
     });
   }
 
-  async _updateEdgeCache(leftId: string, first: number, hasNextPage: boolean,  edges: EdgesT) {
+  async _updateEdgeCache(leftId: string, first: number, hasNextPage: boolean,  edges: Array<EdgeDataT>) {
     const watermarkName = this._watermark(leftId);
     this.redis.watch(watermarkName);
     return new Promise((resolve, reject) => {
