@@ -1,13 +1,13 @@
 /* @flow */
 
 export default class EdgeRegistry {
-  names: {[name: string]: { edge: EdgeT, node: NodeT} };
+  names: {[name: string]: EdgeT };
   static names = {};
-  static register(edge: EdgeT, node: NodeT) {
-    this.names[edge.getName()] = { edge, node };
+  static register(edge: EdgeT) {
+    this.names[edge.getName()] = edge;
   }
 
-  getNodeAndEdgeByName(name: string) {
+  getEdgeByName(name: string) {
     return this.names[name];
   }
 }
