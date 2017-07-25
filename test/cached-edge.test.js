@@ -19,7 +19,7 @@ afterEach(() => {
 
 test('getFirstAfter returns cached edges added in order', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -43,7 +43,7 @@ test('getFirstAfter returns cached edges added in order', async () => {
 
 test('getFirstAfter can exend cache', async (done) => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -67,7 +67,7 @@ test('getFirstAfter can exend cache', async (done) => {
 
 test('getFirstAfter returns edges added in order', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -89,7 +89,7 @@ test('getFirstAfter returns edges added in order', async () => {
 
 test('getFirstAfter returns hasNextPage if more edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
 
   await ed.create('leftId', 'rightId1');
@@ -114,7 +114,7 @@ test('creating an edge increases count', async () => {
 
 test('deleting an edge decreases count', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
   const id = await edge.create('leftId', 'rightId1');
   const count1 = await edge.getCount('leftId');
@@ -127,7 +127,7 @@ test('deleting an edge decreases count', async () => {
 
 test('it can delete edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName);
+  const ed = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, ed);
 
   await ed.create('leftId', 'rightId1');
@@ -142,7 +142,7 @@ test('it can delete edges', async () => {
 
 test('creating an edge returns an id', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
 
   const id = await edge.create('leftId', 'rightId');
 
@@ -151,7 +151,7 @@ test('creating an edge returns an id', async () => {
 
 test('creating an edge increases count', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
 
   await edge.create('leftId', 'rightId');
 
@@ -162,7 +162,7 @@ test('creating an edge increases count', async () => {
 
 test('creating an edge with different leftId does not increase count', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
 
   await edge.create('leftId', 'rightId');
 
@@ -174,7 +174,7 @@ test('creating an edge with different leftId does not increase count', async () 
 test('edge gets added to cache', async (done) => {
   const edgeName = 'test_edge';
   const leftId = 'leftId';
-  const memoryEdge = new MemoryEdge(edgeName);
+  const memoryEdge = new MemoryEdge(edgeName, 'node');
   const edge = new CachedEdge(client, memoryEdge);
 
   await memoryEdge.create(leftId, { test: '1' });
@@ -199,7 +199,7 @@ test('edge gets added to cache', async (done) => {
 test('edge gets added to cache (reverse)', async (done) => {
   const edgeName = 'test_edge';
   const leftId = 'leftId';
-  const memoryEdge = new MemoryEdge(edgeName, false);
+  const memoryEdge = new MemoryEdge(edgeName, 'node', { forward: false });
   const edge = new CachedEdge(client, memoryEdge, { reverse: true });
 
   await memoryEdge.create(leftId, { test: '1' });

@@ -32,6 +32,7 @@ interface NodeT {
 
 interface EdgeT {
   getName(): string;
+  getNodeName(): string;
   create(leftNodeId: string, rightNodeId: string): Promise<number>;
   delete(leftId: string, id: number): Promise<void>;
   getCount(leftId: string): Promise<number>;
