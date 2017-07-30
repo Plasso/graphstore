@@ -43,7 +43,7 @@ test('it asks delegate for uncached node', async () => {
 });
 
 test('it asks delegate for name', () => {
-  const node = new CachedNode(null, new MemoryNode('test_node'));
+  const node = new CachedNode({}, new MemoryNode('test_node'));
 
   expect(node.getName()).toBe('test_node');
 });

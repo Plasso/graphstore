@@ -27,19 +27,24 @@ export default class MemoryEdge implements EdgeT {
     return this.edges[leftId] ? this.edges[leftId].length : 0;
   }
 
-  async create(leftNodeId: string, rightNodeId: string) {
+  async create(leftNodeId: string, rightNodeId: string, data: ?{}) {
     this.edges[leftNodeId] = this.edges[leftNodeId] || [];
 
     const id = this.id;
     this.id += 1;
 
     if (this.forward) {
-      this.edges[leftNodeId].push({ id, nodeId: rightNodeId });
+      this.edges[leftNodeId].push({ id, nodeId: rightNodeId, data });
     } else {
-      this.edges[leftNodeId].unshift({ id, nodeId: rightNodeId });
+      this.edges[leftNodeId].unshift({ id, nodeId: rightNodeId, data });
     }
 
     return id;
+  }
+
+  async update(leftId: string, id: number, data: ?{}) {
+    const offset = this.edges[leftId].findIndex((edge) => edge.id === id);
+    this.edges[leftId][offset].data = data;
   }
 
   async getFirstAfter(leftId: string, { after, first }: EdgeFirstAfterT) {

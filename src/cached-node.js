@@ -1,12 +1,13 @@
 /* @flow */
 
 import counter from './counter';
+import promisify from './promisify';
 
 export default class CachedNode implements NodeT {
-  redis: RedisClient;
+  redis: any;
   delegate: NodeT;
   constructor(redis: RedisClient, delegate: NodeT) {
-    this.redis = redis;
+    this.redis = promisify(redis);
     this.delegate = delegate;
   }
 
@@ -14,54 +15,25 @@ export default class CachedNode implements NodeT {
     return `${this.delegate.getName()}_${id}`;
   }
 
-  _create(id: string, data: {}) {
-    return new Promise((resolve, reject) => {
-      this.redis.get(this._id(id), (err, node) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+  async _create(id: string, data: {}) {
+    const node = await this.redis.get(this._id(id));
 
-        if (node && node != 'MISSING') {
-          reject(new Error(`Id ${id} already exists.`));
-          return;
-        }
+    if (node && node != 'MISSING') {
+      throw new Error(`Id ${id} already exists.`);
+    }
 
-        let json;
+    const json = JSON.stringify({ id, ...data });
 
-        try {
-          json = JSON.stringify({ id, ...data });
-        } catch (e) {
-          reject(e);
-          return;
-        }
+    if (node === 'MISSING') {
+      await this.redis.set(this._id(id));
+    } else {
+      const result = await this.redis.setnx(this._id(id), json);
 
-        if (node === 'MISSING') {
-          this.redis.set(this._id(id), json, (err) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-
-            resolve(id);
-          });
-        } else {
-          this.redis.setnx(this._id(id), json, (err, result) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-
-            if (result == 0) {
-              reject(new Error(`Id ${id} already exists`));
-              return;
-            }
-
-            resolve(id);
-          });
-        }
-      });
-    });
+      if (result == 0) {
+        throw new Error(`Id ${id} already exists`);
+      }
+    }
+    return id;
   }
 
   async create(data: {}) {
@@ -73,47 +45,39 @@ export default class CachedNode implements NodeT {
 
   async read(ids: Array<string>) {
     const nodeIds = ids.map((id) => this._id(id));
-    return new Promise((resolve, reject) => {
-      this.redis.mget(nodeIds, async (err, nodes) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    const nodes =  await this.redis.mget(nodeIds);
 
-        const idToIndex = {};
+    const idToIndex = {};
 
-        ids.forEach((id, idx) => {
-          idToIndex[id] = idx;
-        });
-        const missingIds = [];
-        nodes.forEach((node, idx) => {
-          nodes[idx] = undefined;
-          if (node === null) {
-            missingIds.push(ids[idx]);
-          } else if (node !== 'MISSING') {
-            try {
-              nodes[idx] = JSON.parse(node);
-            } catch(_) {
-              nodes[idx] = 'CORRUPT';
-            }
-          }
-        });
-
-        if (missingIds.length > 0) {
-          const delegateNodes = await this.delegate.read(missingIds);
-          const promises = delegateNodes.map((delegateNode) => {
-            if (delegateNode) {
-              nodes[idToIndex[delegateNode.id]] = delegateNode;
-              return this._create(delegateNode.id, delegateNode);
-            }
-            return Promise.resolve();
-          });
-          await Promise.all(promises);
-        }
-
-        resolve(nodes);
-      });
+    ids.forEach((id, idx) => {
+      idToIndex[id] = idx;
     });
+    const missingIds = [];
+    nodes.forEach((node, idx) => {
+      nodes[idx] = undefined;
+      if (node === null) {
+        missingIds.push(ids[idx]);
+      } else if (node !== 'MISSING') {
+        try {
+          nodes[idx] = JSON.parse(node);
+        } catch(_) {
+          nodes[idx] = 'CORRUPT';
+        }
+      }
+    });
+
+    if (missingIds.length > 0) {
+      const delegateNodes = await this.delegate.read(missingIds);
+      const promises = delegateNodes.map((delegateNode) => {
+        if (delegateNode) {
+          nodes[idToIndex[delegateNode.id]] = delegateNode;
+          return this._create(delegateNode.id, delegateNode);
+        }
+        return Promise.resolve();
+      });
+      await Promise.all(promises);
+    }
+    return nodes;
   }
 
   async update(id: string, node: NodeDataT) {
@@ -132,55 +96,30 @@ export default class CachedNode implements NodeT {
 
   async _update(id: string, node: NodeDataT) {
     const nodeId = this._id(id);
-    return new Promise(async (resolve, reject) => {
-      this.redis.watch(nodeId);
-      const updateId = await counter(this.redis);
-      this.redis.get(nodeId, (err, cachedNode) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    this.redis.__base.watch(nodeId);
+    const updateId = await counter(this.redis);
+    const cachedNode = await this.redis.get(nodeId);
 
-        if (cachedNode === 'MISSING') {
-          reject(new Error(`Id ${id} does not exist`));
-          return;
-        }
+    if (cachedNode === 'MISSING') {
+      this.redis.__base.unwatch(nodeId);
+      throw new Error(`Id ${id} does not exist`);
+    }
 
-        const multi = this.redis.multi();
+    const multi = promisify(this.redis.__base.multi());
 
-        multi.set(nodeId, JSON.stringify({ id, ...node }));
+    multi.__base.set(nodeId, JSON.stringify({ id, ...node }));
 
-        multi.exec(async (err, result) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+    const result = await multi.exec();
+    if (result === null) {
+      throw new Error('Failed to update node');
+    }
 
-          if (result === null) {
-            reject();
-            return;
-          }
-
-          await this.delegate.update(id, node, updateId);
-
-          resolve()
-        });
-      });
-    });
+    return  this.delegate.update(id, node, updateId);
   }
 
   async delete(id: string) {
-    return new Promise(async (resolve, reject) => {
-      await this.delegate.delete(id);
-      this.redis.set(this._id(id), 'MISSING', (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve();
-      });
-    });
+    await this.delegate.delete(id);
+    await this.redis.set(this._id(id), 'MISSING');
   }
 
   getName() {

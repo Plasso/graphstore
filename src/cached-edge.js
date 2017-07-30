@@ -1,11 +1,12 @@
 /* @flow */
+import promisify from './promisify';
 
-export default class CachedEdge {
-  redis: RedisClient;
+export default class CachedEdge implements EdgeT {
+  redis: any;
   delegate: EdgeT;
   forward: boolean;
   constructor(redis: RedisClient, delegate: EdgeT, options: { reverse?: boolean } = {}) {
-    this.redis = redis;
+    this.redis = promisify(redis);
     this.delegate = delegate;
     this.forward = options.reverse ? false : true;
   }
@@ -17,54 +18,38 @@ export default class CachedEdge {
   }
 
   async _get(key: string) {
-    return new Promise((resolve, reject) => {
-      this.redis.get(key, (err, data) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve(data);
-      });
-    });
+    return this.redis.get(key);
   }
 
   async _create(id: number, leftNodeId: string, rightNodeId: string) {
     const watermarkName = this._watermark(leftNodeId);
-    this.redis.watch(watermarkName);
+    this.redis.__base.watch(watermarkName);
 
     try {
-      const watermarkString = await this._get(watermarkName);
+      const watermarkString = await this.redis.get(watermarkName);
       const watermark = parseInt(watermarkString, 10);
 
-      const multi = this.redis.multi();
+      const multi = promisify(this.redis.__base.multi());
       const name = this._name(leftNodeId);
       const counterName = `${name}_count`;
 
-      multi.incr(counterName);
+      multi.__base.incr(counterName);
 
       if (this.forward) {
         if (id < watermark) {
-          multi.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
         }
       } else {
         if (id > watermark) {
-          multi.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
         }
       }
-      return new Promise((resolve, reject) => {
-        multi.exec((err, result) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(id);
-        });
-      });
+      await multi.exec();
     } catch(err) {
-      this.redis.unwatch(watermarkName);
+      this.redis.__base.unwatch(watermarkName);
       throw(err);
     }
+    return id;
   }
 
   async create(leftNodeId: string, rightNodeId: string) {
@@ -94,29 +79,17 @@ export default class CachedEdge {
     max = this.forward ? +Infinity : -Infinity;
 
     const args = [edgeName, min, max, 'LIMIT', 0, Math.min(first, CachedEdge.MAX_BATCH)];
-    return new Promise((resolve, reject) => {
-      if (this.forward) {
-        this.redis.zrangebyscore(args, (err, data) => {
-          resolve(data.map(x => JSON.parse(x)));
-        });
-      } else {
-        this.redis.zrevrangebyscore(args, (err, data) => {
-          resolve(data.map(x => JSON.parse(x)));
-        });
-      }
-    });
+    let data;
+    if (this.forward) {
+      data = await this.redis.zrangebyscore(args);
+    } else {
+      data = await this.redis.zrevrangebyscore(args);
+    }
+    return data.map(x => JSON.parse(x));
   }
 
   _getRankOfEdgeItem(name: string, id: number) {
-    return new Promise((resolve, reject) => {
-      this.redis.zcount(name, -Infinity, `(${id}`, (err, rank) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(rank);
-      });
-    });
+    return this.redis.zcount(name, -Infinity, `(${id}`);
   }
 
   _name(leftId: string) {
@@ -124,60 +97,43 @@ export default class CachedEdge {
   }
 
   _getCountOfEdge(leftId: string) {
-    return new Promise((resolve, reject) => {
-      this.redis.zcard(this._name(leftId), (err, count) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(count);
-      });
-    });
+    return this.redis.zcard(this._name(leftId));
   }
 
   async _updateEdgeCache(leftId: string, first: number, hasNextPage: boolean,  edges: Array<EdgeDataT>) {
     const watermarkName = this._watermark(leftId);
-    this.redis.watch(watermarkName);
-    return new Promise((resolve, reject) => {
-      this.redis.get(watermarkName, async (err, watermarkString) => {
-        const multi = this.redis.multi();
-        const prefix = [this._name(leftId)];
-        const watermark = parseInt(watermarkString, 10);
-        let edgesToAdd;
+    this.redis.__base.watch(watermarkName);
+    const watermarkString = await this.redis.get(watermarkName);
+    const multi = promisify(this.redis.__base.multi());
+    const prefix = [this._name(leftId)];
+    const watermark = parseInt(watermarkString, 10);
+    let edgesToAdd;
 
-        if (!isNaN(watermark)) {
-          edgesToAdd = edges.filter((edge) => {
-            if (this.forward) {
-              return edge.id > watermark;
-            } else {
-              return edge.id < watermark;
-            }
-          });
+    if (!isNaN(watermark)) {
+      edgesToAdd = edges.filter((edge) => {
+        if (this.forward) {
+          return edge.id > watermark;
         } else {
-          edgesToAdd = edges;
+          return edge.id < watermark;
         }
-
-        edgesToAdd.forEach((x) => {
-          prefix.push(x.id);
-          prefix.push(JSON.stringify(x));
-        });
-
-        if (edgesToAdd.length > 0) {
-          multi.set(this._watermark(leftId), edgesToAdd[edgesToAdd.length - 1].id);
-          multi.zadd(prefix);
-        }
-
-        multi.exec((err) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          const newHasNextPage = first < edges.length;
-          const page = { hasNextPage: newHasNextPage || hasNextPage, edges: edges.slice(0, first) };
-          resolve(page);
-        });
       });
+    } else {
+      edgesToAdd = edges;
+    }
+
+    edgesToAdd.forEach((x) => {
+      prefix.push(x.id);
+      prefix.push(JSON.stringify(x));
     });
+
+    if (edgesToAdd.length > 0) {
+      multi.__base.set(this._watermark(leftId), edgesToAdd[edgesToAdd.length - 1].id);
+      multi.__base.zadd(prefix);
+    }
+
+    await multi.exec();
+    const newHasNextPage = first < edges.length;
+    return { hasNextPage: newHasNextPage || hasNextPage, edges: edges.slice(0, first) };
   }
 
   async getFirstAfter(leftId: string, { after, first }: EdgeFirstAfterT) {
@@ -215,6 +171,7 @@ export default class CachedEdge {
         const page = await this._updateEdgeCache(leftId, first, hasNextPage, edges);
         return page;
       } catch (e) {
+        console.log(e);
         tries = tries + 1;
       }
     }
@@ -223,59 +180,35 @@ export default class CachedEdge {
 
   async delete(leftId: string, id: number) {
     await this.delegate.delete(leftId, id);
-    return new Promise((resolve, reject) => {
-      this.redis.zremrangebyscore(this._name(leftId), id, id, (err, count) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        const name = this._name(leftId);
-        const counterName = `${name}_count`;
+    await this.redis.zremrangebyscore(this._name(leftId), id, id);
+    const name = this._name(leftId);
+    const counterName = `${name}_count`;
 
-        this.redis.decr(counterName);
-
-        resolve();
-      });
-    });
+    this.redis.__base.decr(counterName);
   }
 
   async _updateCountRec(leftId: string) {
-    return new Promise(async (resolve, reject) => {
-      const name = this._name(leftId);
-      const counterName = `${name}_count`;
-      this.redis.watch(counterName);
-      this.redis.get(counterName, async (err, count) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    const name = this._name(leftId);
+    const counterName = `${name}_count`;
 
-        if (count) {
-          this.redis.unwatch(counterName);
-          resolve(count);
-          return;
-        }
+    this.redis.watch(counterName);
+    const count = await this.redis.get(counterName);
 
-        const multi = this.redis.multi();
-        const newCount = await this.delegate.getCount(leftId);
+    if (count) {
+      this.redis.__base.unwatch(counterName);
+      return count;
+    }
 
-        multi.set(counterName, newCount.toString());
+    const multi = promisify(this.redis.__base.multi());
+    const newCount = await this.delegate.getCount(leftId);
 
-        multi.exec((err, result) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+    multi.__base.set(counterName, newCount.toString());
 
-          if (result === null) {
-            reject();
-            return;
-          }
-
-          resolve(newCount)
-        });
-      });
-    });
+    const result = await multi.exec();
+    if (result === null) {
+      throw new Error('unable to update count');
+    }
+    return newCount;
   }
 
   async _updateCount(leftId: string) {
@@ -294,19 +227,25 @@ export default class CachedEdge {
 
   async getCount(leftId: string) {
     const name = this._name(leftId);
-    return new Promise((resolve, reject) => {
-      this.redis.get(`${name}_count`, async (err, count) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        if (count == null) {
-          const newCount = await this._updateCount(leftId);
-          resolve(newCount);
-          return;
-        }
-        resolve(parseInt(count));
-      });
-    });
+    const count = await this.redis.get(`${name}_count`);
+    if (count == null) {
+      return this._updateCount(leftId);
+    }
+    return parseInt(count);
+  }
+
+  getNodeName() {
+    return this.delegate.getNodeName();
+  }
+
+  getName() {
+    return this.delegate.getName();
+  }
+
+  async _update(leftId: string, id: number, data: ?{}) {
+  }
+
+  async update(leftId: string, id: number, data: ?{}) {
+
   }
 }
