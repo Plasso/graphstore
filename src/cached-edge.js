@@ -5,7 +5,7 @@ export default class CachedEdge implements EdgeT {
   redis: any;
   delegate: EdgeT;
   forward: boolean;
-  constructor(redis: RedisClient, delegate: EdgeT, options: { reverse?: boolean } = {}) {
+  constructor(redis: any, delegate: EdgeT, options: { reverse?: boolean } = {}) {
     this.redis = promisify(redis);
     this.delegate = delegate;
     this.forward = options.reverse ? false : true;
@@ -56,7 +56,7 @@ export default class CachedEdge implements EdgeT {
     const id = await this.delegate.create(leftNodeId, rightNodeId);
     let tries = 0;
 
-    while(tries < 3) {
+    while(tries < 4) {
       try {
         return this._create(id, leftNodeId, rightNodeId);
       } catch (e) {
@@ -166,7 +166,7 @@ export default class CachedEdge implements EdgeT {
 
     let tries = 0;
 
-    while(tries < 3) {
+    while(tries < 4) {
       try {
         const page = await this._updateEdgeCache(leftId, first, hasNextPage, edges);
         return page;
@@ -214,7 +214,7 @@ export default class CachedEdge implements EdgeT {
   async _updateCount(leftId: string) {
     let tries = 0;
 
-    while(tries < 3) {
+    while(tries < 4) {
       try {
         const newCount = await this._updateCountRec(leftId);
         return newCount;

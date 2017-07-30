@@ -6,7 +6,7 @@ import promisify from './promisify';
 export default class CachedNode implements NodeT {
   redis: any;
   delegate: NodeT;
-  constructor(redis: RedisClient, delegate: NodeT) {
+  constructor(redis: any, delegate: NodeT) {
     this.redis = promisify(redis);
     this.delegate = delegate;
   }
@@ -83,7 +83,7 @@ export default class CachedNode implements NodeT {
   async update(id: string, node: NodeDataT) {
     let tries = 0;
 
-    while(tries < 3) {
+    while(tries < 4) {
       try {
         await this._update(id, node);
         return;
