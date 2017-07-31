@@ -37,10 +37,10 @@ export default class CachedNode implements NodeT {
   }
 
   async create(data: {}) {
-    const id = await this.delegate.create(data);
-    await this._create(id, data);
+    const node = await this.delegate.create(data);
+    await this._create(node.id, node);
 
-    return id;
+    return node;
   }
 
   async read(ids: Array<string>) {

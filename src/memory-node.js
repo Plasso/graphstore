@@ -21,7 +21,7 @@ export default class MemoryNode implements NodeT {
 
     this.nodes[id] = { id: stringId, ...data };
 
-    return stringId;
+    return this.nodes[id];
   }
 
   async read(ids: Array<string>) {

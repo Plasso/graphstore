@@ -24,7 +24,7 @@ type EdgesT = {
 };
 
 interface NodeT {
-  create(data: {}): Promise<string>;
+  create(data: {}): Promise<NodeDataT>;
   read(ids: Array<string>): Promise<Array<NodeDataT>>;
   update(id: string, node: NodeDataT, updateId: ?number): Promise<void>;
   delete(id: string): Promise<void>;
