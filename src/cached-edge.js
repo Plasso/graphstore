@@ -299,6 +299,6 @@ export default class CachedEdge implements EdgeT {
         tries = tries + 1;
       }
     }
-    throw new Error('');
+    throw new Error('Failed to update edge.');
   }
 }
