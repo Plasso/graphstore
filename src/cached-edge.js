@@ -21,7 +21,7 @@ export default class CachedEdge implements EdgeT {
     return this.redis.get(key);
   }
 
-  async _create(id: number, leftNodeId: string, rightNodeId: string) {
+  async _create(id: number, leftNodeId: string, rightNodeId: string, data: ?{}) {
     const watermarkName = this._watermark(leftNodeId);
     this.redis.__base.watch(watermarkName);
 
@@ -37,28 +37,28 @@ export default class CachedEdge implements EdgeT {
 
       if (this.forward) {
         if (id < watermark) {
-          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId, data }));
         }
       } else {
         if (id > watermark) {
-          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId }));
+          multi.__base.zadd(this._name(leftNodeId), id, JSON.stringify({ id, nodeId: rightNodeId, data }));
         }
       }
       await multi.exec();
     } catch(err) {
-      this.redis.__base.unwatch(watermarkName);
+      this.redis.__base.unwatch();
       throw(err);
     }
     return id;
   }
 
-  async create(leftNodeId: string, rightNodeId: string) {
-    const id = await this.delegate.create(leftNodeId, rightNodeId);
+  async create(leftNodeId: string, rightNodeId: string, data: ?{}) {
+    const id = await this.delegate.create(leftNodeId, rightNodeId, data);
     let tries = 0;
 
     while(tries < 4) {
       try {
-        return this._create(id, leftNodeId, rightNodeId);
+        return this._create(id, leftNodeId, rightNodeId, data);
       } catch (e) {
         tries = tries + 1;
       }
@@ -89,7 +89,11 @@ export default class CachedEdge implements EdgeT {
   }
 
   _getRankOfEdgeItem(name: string, id: number) {
-    return this.redis.zcount(name, -Infinity, `(${id}`);
+    if (this.forward) {
+      this.redis.zcount(name, -Infinity, `(${id}`);
+    } else {
+      this.redis.zcount(name, +Infinity, `(${id}`);
+    }
   }
 
   _name(leftId: string) {
@@ -171,7 +175,6 @@ export default class CachedEdge implements EdgeT {
         const page = await this._updateEdgeCache(leftId, first, hasNextPage, edges);
         return page;
       } catch (e) {
-        console.log(e);
         tries = tries + 1;
       }
     }
@@ -195,7 +198,7 @@ export default class CachedEdge implements EdgeT {
     const count = await this.redis.get(counterName);
 
     if (count) {
-      this.redis.__base.unwatch(counterName);
+      this.redis.__base.unwatch();
       return count;
     }
 
@@ -243,9 +246,59 @@ export default class CachedEdge implements EdgeT {
   }
 
   async _update(leftId: string, id: number, data: ?{}) {
+    const watermarkName = this._watermark(leftId);
+    const edgeName = this._name(leftId);
+    this.redis.__base.watch(edgeName, watermarkName);
+    try {
+      const watermarkString = await this.redis.get(watermarkName);
+      const watermark = parseInt(watermarkString, 10);
+
+      if (isNaN(watermark)) {
+        this.redis.__base.unwatch();
+        return;
+      }
+
+      if (this.forward) {
+        if (id > watermark) {
+          this.redis.__base.unwatch();
+          return;
+        }
+      } else {
+        if (id < watermark) {
+          this.redis.__base.unwatch();
+          return;
+        }
+      }
+
+      const multi = promisify(this.redis.__base.multi());
+      const [ edgeJson ] = await this.redis.zrangebyscore(edgeName, id, id);
+      multi.__base.zremrangebyscore(edgeName, id, id);
+      const edge = JSON.parse(edgeJson);
+      edge.data = data;
+      multi.__base.zadd(edgeName, id, JSON.stringify(edge));
+      const result = await multi.exec();
+      if (result === null) {
+        throw new Error('Failed to update edge cache.');
+      }
+    } catch (e) {
+      this.redis.__base.unwatch();
+      throw e;
+    }
   }
 
   async update(leftId: string, id: number, data: ?{}) {
+    await this.delegate.update(leftId, id, data);
 
+    let tries = 0;
+
+    while (tries < 4) {
+      try {
+        await this._update(leftId, id, data);
+        return;
+      } catch (e) {
+        tries = tries + 1;
+      }
+    }
+    throw new Error('');
   }
 }

@@ -41,6 +41,41 @@ test('getFirstAfter returns cached edges added in order', async () => {
   });
 });
 
+test('it can update edges', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName, 'node');
+  const edge = new CachedEdge(client, ed);
+
+  const id = await edge.create('leftId', 'rightId1', { test: 123 });
+
+  await edge.update('leftId', id, { test: 321 });
+
+  const page = await edge.getFirstAfter('leftId', { first: 1 });
+
+  expect(page.edges[0]).toMatchObject({
+    data: {
+      test: 321
+    }
+  });
+});
+
+test('it can update edges in cache', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName, 'node');
+  const edge = new CachedEdge(client, ed);
+
+  const id = await edge.create('leftId', 'rightId1', { test: 123 });
+  await edge.getFirstAfter('leftId', { first: 1 });
+  await edge.update('leftId', id, { test: 321 });
+  const page = await edge.getFirstAfter('leftId', { first: 1 });
+
+  expect(page.edges[0]).toMatchObject({
+    data: {
+      test: 321
+    }
+  });
+});
+
 test('getFirstAfter can exend cache', async (done) => {
   const edgeName = 'test_edge';
   const ed = new MemoryEdge(edgeName, 'node');

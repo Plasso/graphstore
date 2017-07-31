@@ -101,7 +101,7 @@ export default class CachedNode implements NodeT {
     const cachedNode = await this.redis.get(nodeId);
 
     if (cachedNode === 'MISSING') {
-      this.redis.__base.unwatch(nodeId);
+      this.redis.__base.unwatch();
       throw new Error(`Id ${id} does not exist`);
     }
 
