@@ -41,7 +41,7 @@ test('if can update a node', async () => {
   const node = new MemoryNode('node_name');
   const { id } = await node.create({ test: 'data' });
 
-  await node.update(id, { test: 'asdf' });
+  await node.update({ id, test: 'asdf' });
 
   const fetchedNode = await node.read([id]);
 

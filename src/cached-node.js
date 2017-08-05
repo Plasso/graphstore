@@ -80,40 +80,40 @@ export default class CachedNode implements NodeT {
     return nodes;
   }
 
-  async update(id: string, node: NodeDataT) {
+  async update(node: NodeDataT) {
     let tries = 0;
 
     while(tries < 4) {
       try {
-        return this._update(id, node);
+        return this._update(node);
       } catch (e) {
         tries = tries + 1;
       }
     }
-    throw new Error(`Could not update node ${id}`);
+    throw new Error(`Could not update node ${node.id}`);
   }
 
-  async _update(id: string, node: NodeDataT) {
-    const nodeId = this._id(id);
+  async _update(node: NodeDataT) {
+    const nodeId = this._id(node.id);
     this.redis.__base.watch(nodeId);
     const updateId = await counter(this.redis);
     const cachedNode = await this.redis.get(nodeId);
 
     if (cachedNode === 'MISSING') {
       this.redis.__base.unwatch();
-      throw new Error(`Id ${id} does not exist`);
+      throw new Error(`Id ${node.id} does not exist`);
     }
 
     const multi = promisify(this.redis.__base.multi());
 
-    multi.__base.set(nodeId, JSON.stringify({ id, ...node }));
+    multi.__base.set(nodeId, JSON.stringify({ ...node }));
 
     const result = await multi.exec();
     if (result === null) {
       throw new Error('Failed to update node');
     }
 
-    return this.delegate.update(id, node, updateId);
+    return this.delegate.update(node, updateId);
   }
 
   async delete(id: string) {

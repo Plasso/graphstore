@@ -79,14 +79,13 @@ test('it emits event before update', async () => {
 
   let called = false;
 
-  node.on('beforeUpdate', (newId, data, updateId) => {
-    expect(newId).toBe(id);
-    expect(data).toMatchObject(newData);
+  node.on('beforeUpdate', (data, updateId) => {
+    expect(data).toMatchObject({ id, ...newData });
     expect(updateId).toBe(1);
     called = true;
   });
 
-  await node.update(id, newData, 1);
+  await node.update({ id, ...newData }, 1);
 
   expect(called).toBe(true);
 });
@@ -100,14 +99,13 @@ test('it emits event after update', async () => {
 
   let called = false;
 
-  node.on('afterUpdate', (newId, data, updateId) => {
-    expect(newId).toBe(id);
-    expect(data).toMatchObject(newData);
+  node.on('afterUpdate', (data, updateId) => {
+    expect(data).toMatchObject({ id, ...newData });
     expect(updateId).toBe(1);
     called = true;
   });
 
-  await node.update(id, newData, 1);
+  await node.update({ id, ...newData }, 1);
 
   expect(called).toBe(true);
 });

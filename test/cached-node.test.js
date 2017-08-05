@@ -76,12 +76,12 @@ test('it deletes nodes from delegate', async () => {
 });
 
 test('it updates nodes in cache', async (done) => {
-  const testNode = { id: null, test: 'asdf' };
+  const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
   const { id } = await node.create({ test: 'hjkl' });
 
-  await node.update(id, testNode);
+  await node.update({ id, ...testNode });
 
   client.get(node._id(id), (err, newNode) => {
     const parsedObject = JSON.parse(newNode);
@@ -96,7 +96,7 @@ test('it updates nodes in delegate', async () => {
 
   const { id } = await node.create({ test: 'hjkl' });
 
-  await node.update(id, testNode);
+  await node.update({ id, ...testNode });
 
   const [fetchedNode] = await node.read([id]);
 

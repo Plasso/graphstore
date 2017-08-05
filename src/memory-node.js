@@ -32,8 +32,8 @@ export default class MemoryNode implements NodeT {
     delete this.nodes[parseInt(id, 32)];
   }
 
-  async update(id: string, node: NodeDataT /* , updateId */) {
-    this.nodes[parseInt(id, 32)] = { id, ...node };
+  async update(node: NodeDataT /* , updateId */) {
+    this.nodes[parseInt(node.id, 32)] = { ...node };
     return true;
   }
 }

@@ -27,10 +27,10 @@ export default class EventNode extends EventEmitter {
     return node;
   }
 
-  async update(id: string, data: NodeDataT, updateId: number) {
-    this.emit('beforeUpdate', id, data, updateId);
-    await this.delegate.update(id, data, updateId);
-    this.emit('afterUpdate', id, data, updateId);
+  async update(data: NodeDataT, updateId: number) {
+    this.emit('beforeUpdate', data, updateId);
+    await this.delegate.update(data, updateId);
+    this.emit('afterUpdate', data, updateId);
   }
 
   async delete(id: string) {
