@@ -11,7 +11,7 @@ test('it knows it\'s name', () => {
 test('it returns an id when creating a node', async () => {
   const node = new MemoryNode('node_name');
 
-  const id = await node.create({ test: 'data' });
+  const { id } = await node.create({ test: 'data' });
 
   expect(id).toBe('0');
 });
@@ -20,7 +20,7 @@ test('it creates a node', async () => {
   const node = new MemoryNode('node_name');
   const testNodeData = { test: 'data' };
 
-  const id = await node.create(testNodeData);
+  const { id } = await node.create(testNodeData);
   const fetchedNodes = await node.read([id]);
 
   expect(fetchedNodes[0]).toMatchObject(testNodeData);
@@ -28,7 +28,7 @@ test('it creates a node', async () => {
 
 test('if can delete a node', async () => {
   const node = new MemoryNode('node_name');
-  const id = await node.create({ test: 'data' });
+  const { id } = await node.create({ test: 'data' });
 
   await node.delete(id);
 
@@ -39,7 +39,7 @@ test('if can delete a node', async () => {
 
 test('if can update a node', async () => {
   const node = new MemoryNode('node_name');
-  const id = await node.create({ test: 'data' });
+  const { id } = await node.create({ test: 'data' });
 
   await node.update(id, { test: 'asdf' });
 

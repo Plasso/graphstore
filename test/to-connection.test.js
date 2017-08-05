@@ -20,8 +20,8 @@ test('it can convert edges to a connection', async () => {
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 
-  const node1Id = await node.create(node1);
-  const node2Id = await node.create(node2);
+  const { id: node1Id } = await node.create(node1);
+  const { id: node2Id } = await node.create(node2);
 
   const edge1Id = await edge.create('leftId', node1Id);
   const edge2Id = await edge.create('leftId', node2Id);
@@ -46,8 +46,8 @@ test('it can convert edges to a connection with hasNextPage', async () => {
   const node = new MemoryNode('test_node');
   const edge = new MemoryEdge('test_edge');
 
-  const node1Id = await node.create(node1);
-  const node2Id = await node.create(node2);
+  const { id: node1Id } = await node.create(node1);
+  const { id: node2Id } = await node.create(node2);
 
   const edge1Id = await edge.create('leftId', node1Id);
   const edge2Id = await edge.create('leftId', node2Id);

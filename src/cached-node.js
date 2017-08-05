@@ -85,8 +85,7 @@ export default class CachedNode implements NodeT {
 
     while(tries < 4) {
       try {
-        await this._update(id, node);
-        return;
+        return this._update(id, node);
       } catch (e) {
         tries = tries + 1;
       }
@@ -114,7 +113,7 @@ export default class CachedNode implements NodeT {
       throw new Error('Failed to update node');
     }
 
-    return  this.delegate.update(id, node, updateId);
+    return this.delegate.update(id, node, updateId);
   }
 
   async delete(id: string) {

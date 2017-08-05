@@ -90,9 +90,9 @@ export default class CachedEdge implements EdgeT {
 
   _getRankOfEdgeItem(name: string, id: number) {
     if (this.forward) {
-      this.redis.zcount(name, -Infinity, `(${id}`);
+      return this.redis.zcount(name, -Infinity, `(${id}`);
     } else {
-      this.redis.zcount(name, +Infinity, `(${id}`);
+      return this.redis.zcount(name, +Infinity, `(${id}`);
     }
   }
 
