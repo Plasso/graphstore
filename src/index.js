@@ -6,6 +6,7 @@ import EventNode from './event-node';
 import NodeRegistry from './node-registry';
 import EdgeRegistry from './edge-registry';
 import toConnection from './to-connection';
+import orderNodes from './order-nodes';
 
 module.exports = {
   CachedEdge,
@@ -16,5 +17,6 @@ module.exports = {
   NodeRegistry,
   EdgeRegistry,
   EventNode,
+  orderNodes,
 };
 
