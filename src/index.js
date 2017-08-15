@@ -3,8 +3,6 @@ import CachedNode from './cached-node';
 import MemoryEdge from './memory-edge';
 import MemoryNode from './memory-node';
 import EventNode from './event-node';
-import NodeRegistry from './node-registry';
-import EdgeRegistry from './edge-registry';
 import toConnection from './to-connection';
 import orderNodes from './order-nodes';
 import MemoryDictionary from './memory-dictionary';
