@@ -1,3 +1,5 @@
+/* @flow */
+
 import CachedEdge from './cached-edge';
 import CachedNode from './cached-node';
 import MemoryEdge from './memory-edge';
@@ -14,8 +16,6 @@ module.exports = {
   MemoryEdge,
   MemoryNode,
   toConnection,
-  NodeRegistry,
-  EdgeRegistry,
   EventNode,
   orderNodes,
   MemoryDictionary,

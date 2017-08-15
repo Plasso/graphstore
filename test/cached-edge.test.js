@@ -19,7 +19,7 @@ afterEach(() => {
 
 test('getFirstAfter returns cached edges added in order', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -43,7 +43,7 @@ test('getFirstAfter returns cached edges added in order', async () => {
 
 test('it can update edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   const id = await edge.create('leftId', 'rightId1', { test: 123 });
@@ -61,7 +61,7 @@ test('it can update edges', async () => {
 
 test('it can update edges in cache', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   const id = await edge.create('leftId', 'rightId1', { test: 123 });
@@ -78,7 +78,7 @@ test('it can update edges in cache', async () => {
 
 test('getFirstAfter can exend cache', async (done) => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -102,7 +102,7 @@ test('getFirstAfter can exend cache', async (done) => {
 
 test('getFirstAfter returns edges added in order', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   const after = await ed.create('leftId', 'rightId1');
@@ -124,7 +124,7 @@ test('getFirstAfter returns edges added in order', async () => {
 
 test('getFirstAfter returns hasNextPage if more edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   await ed.create('leftId', 'rightId1');
@@ -149,7 +149,7 @@ test('creating an edge increases count', async () => {
 
 test('deleting an edge decreases count', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
   const id = await edge.create('leftId', 'rightId1');
   const count1 = await edge.getCount('leftId');
@@ -162,7 +162,7 @@ test('deleting an edge decreases count', async () => {
 
 test('it can delete edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, ed);
 
   await ed.create('leftId', 'rightId1');
@@ -177,7 +177,7 @@ test('it can delete edges', async () => {
 
 test('creating an edge returns an id', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
 
   const id = await edge.create('leftId', 'rightId');
 
@@ -186,7 +186,7 @@ test('creating an edge returns an id', async () => {
 
 test('creating an edge increases count', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
 
   await edge.create('leftId', 'rightId');
 
@@ -197,7 +197,7 @@ test('creating an edge increases count', async () => {
 
 test('creating an edge with different leftId does not increase count', async () => {
   const edgeName = 'test_edge';
-  const edge = new CachedEdge(client, new MemoryEdge(edgeName, 'node'));
+  const edge = new CachedEdge(client, new MemoryEdge(edgeName));
 
   await edge.create('leftId', 'rightId');
 
@@ -209,12 +209,12 @@ test('creating an edge with different leftId does not increase count', async () 
 test('edge gets added to cache', async (done) => {
   const edgeName = 'test_edge';
   const leftId = 'leftId';
-  const memoryEdge = new MemoryEdge(edgeName, 'node');
+  const memoryEdge = new MemoryEdge(edgeName);
   const edge = new CachedEdge(client, memoryEdge);
 
-  await memoryEdge.create(leftId, { test: '1' });
-  const id = await memoryEdge.create(leftId, { test: '2' });
-  await memoryEdge.create(leftId, { test: '3' });
+  await memoryEdge.create(leftId, 'rightId1', { test: '1' });
+  const id = await memoryEdge.create(leftId, 'rightId2', { test: '2' });
+  await memoryEdge.create(leftId, 'rightId3', { test: '3' });
 
   await memoryEdge.delete(leftId, id);
 
@@ -222,8 +222,8 @@ test('edge gets added to cache', async (done) => {
 
   const edges = await edge.getFirstAfter(leftId, { first: 2 });
 
-  await edge.create(leftId, { test: '2' });
-  memoryEdge.edges[leftId].sort((a, b) => a.id > b.id);
+  await edge.create(leftId, 'rightId2', { test: '2' });
+  memoryEdge.edges[leftId].sort((a, b) => (a.id > b.id) ? 1 : 0);
 
   client.zrange(edge._name(leftId), 0, -1, (err, data) => {
     expect(data.length).toBe(3);
@@ -234,12 +234,12 @@ test('edge gets added to cache', async (done) => {
 test('edge gets added to cache (reverse)', async (done) => {
   const edgeName = 'test_edge';
   const leftId = 'leftId';
-  const memoryEdge = new MemoryEdge(edgeName, 'node', { forward: false });
+  const memoryEdge = new MemoryEdge(edgeName, { forward: false });
   const edge = new CachedEdge(client, memoryEdge, { reverse: true });
 
-  await memoryEdge.create(leftId, { test: '1' });
-  const id = await memoryEdge.create(leftId, { test: '2' });
-  await memoryEdge.create(leftId, { test: '3' });
+  await memoryEdge.create(leftId, 'rightId1', { test: '1' });
+  const id = await memoryEdge.create(leftId, 'rightId2', { test: '2' });
+  await memoryEdge.create(leftId, 'rightId3', { test: '3' });
 
   await memoryEdge.delete(leftId, id);
 
@@ -247,8 +247,8 @@ test('edge gets added to cache (reverse)', async (done) => {
 
   const edges = await edge.getFirstAfter(leftId, { first: 2 });
 
-  await edge.create(leftId, { test: '2' });
-  memoryEdge.edges[leftId].sort((a, b) => a.id < b.id);
+  await edge.create(leftId, 'rightId2', { test: '2' });
+  memoryEdge.edges[leftId].sort((a, b) => (a.id < b.id) ? 1 : 0);
 
   client.zrevrange(edge._name(leftId), 0, -1, (err, data) => {
     expect(data.length).toBe(3);

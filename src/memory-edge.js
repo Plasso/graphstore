@@ -7,9 +7,8 @@ export default class MemoryEdge implements EdgeT {
   id: number;
   edges: { [leftId: string]: Array<EdgeDataT> };
 
-  constructor(name: string, nodeName: string, options: { forward?: boolean } = {}) {
+  constructor(name: string, options: { forward?: boolean } = {}) {
     this.name = name;
-    this.nodeName = nodeName;
     this.edges = {};
     this.forward = options.forward !== false;
     this.id = 0;
@@ -17,10 +16,6 @@ export default class MemoryEdge implements EdgeT {
 
   getName() {
     return this.name;
-  }
-
-  getNodeName() {
-    return this.nodeName;
   }
 
   async getCount(leftId: string) {

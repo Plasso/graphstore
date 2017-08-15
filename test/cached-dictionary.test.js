@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 test('it can add keys to cache', async () => {
-  const delegate = { set: jest.fn(), read: jest.fn(), getName: () => 'test_dict' };
+  const delegate = { set: jest.fn(), read: jest.fn(), remove: async() => {},  getName: () => 'test_dict' };
   const dict = new CachedDictionary(client, delegate);
 
   await dict.set('key', 'value');
@@ -29,7 +29,7 @@ test('it can add keys to cache', async () => {
 });
 
 test('it can read multiple keys from cache', async () => {
-  const delegate = { set: jest.fn(), read: jest.fn(), getName: () => 'test_dict' };
+  const delegate = { set: jest.fn(), read: jest.fn(), getName: () => 'test_dict', remove: async () => {} };
   const dict = new CachedDictionary(client, delegate);
 
   delegate.read.mockReturnValueOnce(['value2', null]);
@@ -57,7 +57,7 @@ test('it can read multiple keys from cache', async () => {
 });
 
 test('it can remove keys', async () => {
-  const delegate = { set: jest.fn(), remove: jest.fn(), getName: () => 'test_dict' };
+  const delegate = { set: jest.fn(), remove: jest.fn(), getName: () => 'test_dict', read: jest.fn() };
   const dict = new CachedDictionary(client, delegate);
 
 

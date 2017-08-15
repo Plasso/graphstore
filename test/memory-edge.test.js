@@ -4,7 +4,7 @@ import { MemoryEdge } from '../src';
 
 test('it returns the edge name', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   const name = await ed.getName();
 
@@ -13,7 +13,7 @@ test('it returns the edge name', async () => {
 
 test('creating an edge returns an id', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   const id = await ed.create('leftId', 'rightId');
 
@@ -22,7 +22,7 @@ test('creating an edge returns an id', async () => {
 
 test('creating an edge increases count', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   await ed.create('leftId', 'rightId');
   const count = await ed.getCount('leftId');
@@ -32,7 +32,7 @@ test('creating an edge increases count', async () => {
 
 test('creating an edge with different leftId does not increase count', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   await ed.create('leftId', 'rightId');
   const count = await ed.getCount('otherId');
@@ -42,7 +42,7 @@ test('creating an edge with different leftId does not increase count', async () 
 
 test('getFirstAfter returns edges added in order', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   const after = await ed.create('leftId', 'rightId1');
   await ed.create('leftId', 'rightId2');
@@ -63,7 +63,7 @@ test('getFirstAfter returns edges added in order', async () => {
 
 test('getFirstAfter returns edges added in order (reverse)', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node', { forward: false });
+  const ed = new MemoryEdge(edgeName, { forward: false });
 
   await ed.create('leftId', 'rightId1');
   await ed.create('leftId', 'rightId2');
@@ -85,7 +85,7 @@ test('getFirstAfter returns edges added in order (reverse)', async () => {
 
 test('getFirstAfter returns hasNextPage if more edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   await ed.create('leftId', 'rightId1');
   await ed.create('leftId', 'rightId2');
@@ -96,7 +96,7 @@ test('getFirstAfter returns hasNextPage if more edges', async () => {
 
 test('getFirstAfter returns hasNextPage: false if no more edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   await ed.create('leftId', 'rightId1');
   await ed.create('leftId', 'rightId2');
@@ -107,7 +107,7 @@ test('getFirstAfter returns hasNextPage: false if no more edges', async () => {
 
 test('getFirstAfter returns hasNextPage: false if no more edges', async () => {
   const edgeName = 'test_edge';
-  const ed = new MemoryEdge(edgeName, 'node');
+  const ed = new MemoryEdge(edgeName);
 
   await ed.create('leftId', 'rightId1');
   const id = await ed.create('leftId', 'rightId2');

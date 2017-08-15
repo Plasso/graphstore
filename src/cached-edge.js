@@ -66,7 +66,8 @@ export default class CachedEdge implements EdgeT {
     throw new Error(`Could not update cache`);
   }
 
-  async _read(leftId: string, { after, first }: EdgeFirstAfterT) {
+  async _read(leftId: string, { after, first: firstOrUndefined }: EdgeFirstAfterT) {
+    const first = firstOrUndefined || CachedEdge.MAX_BATCH;
     const edgeName = this._name(leftId);
     let min;
     let max;
@@ -140,8 +141,10 @@ export default class CachedEdge implements EdgeT {
     return { hasNextPage: newHasNextPage || hasNextPage, edges: edges.slice(0, first) };
   }
 
-  async getFirstAfter(leftId: string, { after, first }: EdgeFirstAfterT) {
+  async getFirstAfter(leftId: string, { after, first: firstOrUndefined }: EdgeFirstAfterT) {
     const edgeName = this._name(leftId);
+
+    const first = firstOrUndefined || CachedEdge.MAX_BATCH;
 
     let rank;
     if (after != null) {
@@ -235,10 +238,6 @@ export default class CachedEdge implements EdgeT {
       return this._updateCount(leftId);
     }
     return parseInt(count);
-  }
-
-  getNodeName() {
-    return this.delegate.getNodeName();
   }
 
   getName() {
