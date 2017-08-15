@@ -41,3 +41,9 @@ interface EdgeT {
   getFirstAfter(leftId: string, firstAfter: EdgeFirstAfterT): Promise<EdgesT>;
 }
 
+interface DictionaryT {
+  getName(): string;
+  read(keys: Array<string>): Promise<Array<?string>>;
+  set(key: string, value: string): Promise<void>;
+  remove(key: string): Promise<void>;
+}
