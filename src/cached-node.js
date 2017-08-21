@@ -27,7 +27,7 @@ export default class CachedNode implements NodeT {
     if (node === 'MISSING') {
       await this.redis.set(this._id(id));
     } else {
-      const result = await this.redis.setnx(this._id(id), json);
+      const result = await this.redis.set(this._id(id), json);
 
       if (result == 0) {
         throw new Error(`Id ${id} already exists`);
