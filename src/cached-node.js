@@ -101,7 +101,7 @@ export default class CachedNode implements NodeT {
 
     const newNode = { ...node };
 
-    if (node.updateId) {
+    if (newNode.updateId) {
       newNode.updateId = newNode.updateId + 1;
     }
 
@@ -115,7 +115,7 @@ export default class CachedNode implements NodeT {
         throw new Error('Failed to update node');
       }
     } else {
-      await multi.discard();
+      multi.__base.discard();
     }
 
     return success;

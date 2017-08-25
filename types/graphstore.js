@@ -16,6 +16,7 @@ type EdgeFirstAfterT = {
 
 type NodeDataT = {
   id: string;
+  updateId: number;
 };
 
 type EdgesT = {
@@ -26,7 +27,7 @@ type EdgesT = {
 interface NodeT {
   create(data: {}): Promise<NodeDataT>;
   read(ids: Array<string>): Promise<Array<NodeDataT>>;
-  update(node: NodeDataT, updateId: ?number): Promise<boolean>;
+  update(node: NodeDataT): Promise<boolean>;
   delete(id: string): Promise<void>;
   getName(): string;
 }

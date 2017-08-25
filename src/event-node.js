@@ -2,7 +2,7 @@
 
 const EventEmitter = require('events');
 
-export default class EventNode extends EventEmitter {
+export default class EventNode extends EventEmitter implements NodeT {
   delegate: NodeT;
   constructor(delegate: NodeT) {
     super();
@@ -27,10 +27,11 @@ export default class EventNode extends EventEmitter {
     return node;
   }
 
-  async update(data: NodeDataT, updateId: number) {
-    this.emit('beforeUpdate', data, updateId);
-    await this.delegate.update(data, updateId);
-    this.emit('afterUpdate', data, updateId);
+  async update(data: NodeDataT) {
+    this.emit('beforeUpdate', data);
+    const success = await this.delegate.update(data);
+    this.emit('afterUpdate', data);
+    return success;
   }
 
   async delete(id: string) {

@@ -26,7 +26,7 @@ test('it creates a node', async () => {
   expect(fetchedNodes[0]).toMatchObject(testNodeData);
 });
 
-test('if can delete a node', async () => {
+test('it can delete a node', async () => {
   const node = new MemoryNode('node_name');
   const { id } = await node.create({ test: 'data' });
 
@@ -37,14 +37,25 @@ test('if can delete a node', async () => {
   expect(fetchedNode[0]).toBe(undefined);
 });
 
-test('if can update a node', async () => {
+test('it can update a node', async () => {
   const node = new MemoryNode('node_name');
-  const { id } = await node.create({ test: 'data' });
+  const { id, updateId } = await node.create({ test: 'data' });
 
-  await node.update({ id, test: 'asdf' });
+  await node.update({ id, updateId, test: 'asdf' });
 
   const fetchedNode = await node.read([id]);
 
   expect(fetchedNode[0]).toMatchObject({ test: 'asdf' });
+});
+
+test('it stops updates to changed nodes', async () => {
+  const node = new MemoryNode('node_name');
+  const { id, updateId } = await node.create({ test: 'data' });
+
+  const first = await node.update({ id, updateId, test: 'asdf' });
+  const second = await node.update({ id, updateId, test: 'asdf' });
+
+  expect(first).toBe(true);
+  expect(second).toBe(false);
 });
 

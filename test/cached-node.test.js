@@ -79,9 +79,9 @@ test('it updates nodes in cache', async (done) => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id } = await node.create({ test: 'hjkl' });
+  const { id, updateId } = await node.create({ test: 'hjkl' });
 
-  await node.update({ id, ...testNode });
+  await node.update({ id, updateId, ...testNode });
 
   client.get(node._id(id), (err, newNode) => {
     const parsedObject = JSON.parse(newNode);
@@ -94,12 +94,23 @@ test('it updates nodes in delegate', async () => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id } = await node.create({ test: 'hjkl' });
+  const { id, updateId } = await node.create({ test: 'hjkl' });
 
-  await node.update({ id, ...testNode });
+  await node.update({ id, updateId, ...testNode });
 
   const [fetchedNode] = await node.read([id]);
 
   expect(fetchedNode).toMatchObject({ id, ...testNode });
+});
+
+test('it stops updates to changed nodes', async () => {
+  const node = new CachedNode(client, new MemoryNode('node_name'));
+  const { id, updateId } = await node.create({ test: 'data' });
+
+  const first = await node.update({ id, updateId, test: 'asdf' });
+  const second = await node.update({ id, updateId, test: 'asdf' });
+
+  expect(first).toBe(true);
+  expect(second).toBe(false);
 });
 

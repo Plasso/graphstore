@@ -75,18 +75,17 @@ test('it emits event before update', async () => {
   const originalData = { test: 'original' };
   const newData = { test: 'new' };
 
-  const { id } = await node.create(originalData);
+  const { id, updateId } = await node.create(originalData);
 
   let called = false;
 
-  node.on('beforeUpdate', (data, updateId) => {
-    expect(data).toMatchObject({ id, ...newData });
-    expect(updateId).toBe(1);
+  node.on('beforeUpdate', (data) => {
+    expect(data).toMatchObject({ id, updateId, ...newData });
     called = true;
   });
 
-  await node.update({ id, ...newData }, 1);
-
+  const success = await node.update({ id, updateId, ...newData });
+  expect(success).toBe(true);
   expect(called).toBe(true);
 });
 
@@ -95,17 +94,16 @@ test('it emits event after update', async () => {
   const originalData = { test: 'original' };
   const newData = { test: 'new' };
 
-  const { id } = await node.create(originalData);
+  const { id, updateId } = await node.create(originalData);
 
   let called = false;
 
-  node.on('afterUpdate', (data, updateId) => {
-    expect(data).toMatchObject({ id, ...newData });
-    expect(updateId).toBe(1);
+  node.on('afterUpdate', (data) => {
+    expect(data).toMatchObject({ id, updateId: updateId + 1, ...newData });
     called = true;
   });
 
-  await node.update({ id, ...newData }, 1);
+  await node.update({ id, updateId, ...newData });
 
   expect(called).toBe(true);
 });

@@ -3,7 +3,7 @@
 export default class MemoryNode implements NodeT {
   name: string;
   id: number;
-  nodes: { [nodeId: number]: { id: string } };
+  nodes: { [nodeId: number]: { id: string, updateId: number } };
   constructor(name: string) {
     this.name = name;
     this.id = 0;
@@ -19,7 +19,7 @@ export default class MemoryNode implements NodeT {
     const stringId = id.toString(32);
     this.id += 1;
 
-    this.nodes[id] = { id: stringId, ...data };
+    this.nodes[id] = { id: stringId, updateId: 0, ...data };
 
     return this.nodes[id];
   }
@@ -32,7 +32,12 @@ export default class MemoryNode implements NodeT {
     delete this.nodes[parseInt(id, 32)];
   }
 
-  async update(node: NodeDataT /* , updateId */) {
+  async update(node: NodeDataT) {
+    const oldNode = this.nodes[parseInt(node.id, 32)];
+    if (oldNode.updateId !== node.updateId) {
+      return false;
+    }
+    node.updateId = node.updateId + 1;
     this.nodes[parseInt(node.id, 32)] = { ...node };
     return true;
   }
