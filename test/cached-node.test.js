@@ -90,6 +90,21 @@ test('it updates nodes in cache', async (done) => {
   });
 });
 
+test('it can evict items from cache', async (done) => {
+  const testNode = { test: 'asdf' };
+  const node = new CachedNode(client, new MemoryNode('test_node'));
+
+  const { id, updateId } = await node.create({ test: 'hjkl' });
+
+  await node.evict([id]);
+
+  client.get(node._id(id), (err, newNode) => {
+    expect(newNode).toBe(null);
+    done();
+  });
+});
+
+
 test('it updates nodes in delegate', async () => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));

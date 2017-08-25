@@ -79,6 +79,10 @@ export default class CachedNode implements NodeT {
     return nodes;
   }
 
+  async evict(ids: Array<string>) {
+    return this.redis.del(ids.map(id => this._id(id)));
+  }
+
   async update(node: NodeDataT) {
     const nodeId = this._id(node.id);
     this.redis.__base.watch(nodeId);

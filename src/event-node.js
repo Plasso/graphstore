@@ -27,6 +27,12 @@ export default class EventNode extends EventEmitter implements NodeT {
     return node;
   }
 
+  async evict(ids: Array<string>) {
+    this.emit('beforeEvict', ids);
+    await this.delegate.evict(ids);
+    this.emit('afterEvict', ids);
+  }
+
   async update(data: NodeDataT) {
     this.emit('beforeUpdate', data);
     const success = await this.delegate.update(data);

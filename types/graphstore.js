@@ -30,6 +30,7 @@ interface NodeT {
   update(node: NodeDataT): Promise<boolean>;
   delete(id: string): Promise<void>;
   getName(): string;
+  evict(ids: Array<string>): Promise<void>;
 }
 
 interface EdgeT {

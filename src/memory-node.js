@@ -24,6 +24,9 @@ export default class MemoryNode implements NodeT {
     return this.nodes[id];
   }
 
+  async evict() {
+  }
+
   async read(ids: Array<string>) {
     return ids.map((id) => this.nodes[parseInt(id, 32)]);
   }

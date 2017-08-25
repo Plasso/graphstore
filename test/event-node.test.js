@@ -38,6 +38,38 @@ test('it emits event after read', async () => {
   expect(called).toBe(true);
 });
 
+
+test('it emits event before evict', async () => {
+  const node = new EventNode(new MemoryNode('test_node'));
+
+  const ids = ['1', '2', '3'];
+  let called = false;
+
+  node.on('beforeEvict', (newIds) => {
+    newIds.forEach((id, idx) => expect(id).toBe(ids[idx]));
+    called = true;
+  });
+
+  await node.evict(ids);
+
+  expect(called).toBe(true);
+});
+
+test('it emits event after evict', async () => {
+  const node = new EventNode(new MemoryNode('test_node'));
+  const ids = ['1', '2', '3'];
+  let called = false;
+
+  node.on('afterEvict', (newIds) => {
+    newIds.forEach((id, idx) => expect(id).toBe(ids[idx]));
+    called = true;
+  });
+
+  await node.evict(ids);
+
+  expect(called).toBe(true);
+});
+
 test('it emits event before create', async () => {
   const node = new EventNode(new MemoryNode('test_node'));
   const nodeData = { test: 'asdf' };
