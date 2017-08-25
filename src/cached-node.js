@@ -1,6 +1,5 @@
 /* @flow */
 
-import counter from './counter';
 import promisify from './promisify';
 
 export default class CachedNode implements NodeT {
@@ -81,22 +80,8 @@ export default class CachedNode implements NodeT {
   }
 
   async update(node: NodeDataT) {
-    let tries = 0;
-
-    while(tries < 4) {
-      try {
-        return this._update(node);
-      } catch (e) {
-        tries = tries + 1;
-      }
-    }
-    throw new Error(`Could not update node ${node.id}`);
-  }
-
-  async _update(node: NodeDataT) {
     const nodeId = this._id(node.id);
     this.redis.__base.watch(nodeId);
-    const updateId = await counter(this.redis);
     const cachedNode = await this.redis.get(nodeId);
 
     if (cachedNode === 'MISSING') {
@@ -104,16 +89,36 @@ export default class CachedNode implements NodeT {
       throw new Error(`Id ${node.id} does not exist`);
     }
 
-    const multi = promisify(this.redis.__base.multi());
-
-    multi.__base.set(nodeId, JSON.stringify({ ...node }));
-
-    const result = await multi.exec();
-    if (result === null) {
-      throw new Error('Failed to update node');
+    // Fail update if underlying node changed since last read
+    if (cachedNode) {
+      if (cachedNode.updateId && node.updateId && cachedNode.updateId !== node.updateId) {
+        this.redis.__base.unwatch();
+        return false;
+      }
     }
 
-    return this.delegate.update(node, updateId);
+    const multi = promisify(this.redis.__base.multi());
+
+    const newNode = { ...node };
+
+    if (node.updateId) {
+      newNode.updateId = newNode.updateId + 1;
+    }
+
+    multi.__base.set(nodeId, JSON.stringify(newNode));
+
+    const success = await this.delegate.update(node);
+
+    if (success) {
+      const result = await multi.exec();
+      if (result === null) {
+        throw new Error('Failed to update node');
+      }
+    } else {
+      await multi.discard();
+    }
+
+    return success;
   }
 
   async delete(id: string) {
