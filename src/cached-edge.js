@@ -141,7 +141,7 @@ export default class CachedEdge implements EdgeT {
     return { hasNextPage: newHasNextPage || hasNextPage, edges: edges.slice(0, first) };
   }
 
-  async getFirstAfter(leftId: string, { after, first: firstOrUndefined }: EdgeFirstAfterT) {
+  async getFirstAfter(leftId: string, { after, first: firstOrUndefined } : EdgeFirstAfterT = {}) {
     const edgeName = this._name(leftId);
 
     const first = firstOrUndefined || CachedEdge.MAX_BATCH;
