@@ -8,7 +8,7 @@ test('it emits event before read', async () => {
 
   let called = false;
 
-  const { id } = await node.create(nodeData);
+  const [{ id }] = await node.create([nodeData]);
 
   node.on('beforeRead', ([firstId]) => {
     called = true;
@@ -26,7 +26,7 @@ test('it emits event after read', async () => {
 
   let called = false;
 
-  const { id } = await node.create(nodeData);
+  const [{ id }] = await node.create([nodeData]);
 
   node.on('afterRead', ([newNode]) => {
     called = true;
@@ -76,12 +76,12 @@ test('it emits event before create', async () => {
 
   let called = false;
 
-  node.on('beforeCreate', (data) => {
+  node.on('beforeCreate', ([data]) => {
     called = true;
     expect(data).toMatchObject(nodeData);
   });
 
-  await node.create(nodeData);
+  await node.create([nodeData]);
 
   expect(called).toBe(true);
 });
@@ -92,12 +92,12 @@ test('it emits event after create', async () => {
 
   let generatedId;
 
-  node.on('afterCreate', (newNode) => {
+  node.on('afterCreate', ([newNode]) => {
     expect(newNode).toMatchObject({ ...nodeData });
     generatedId = newNode.id;
   });
 
-  const { id } = await node.create(nodeData);
+  const [{ id }] = await node.create([nodeData]);
 
   expect(generatedId).toBe(id);
 });
@@ -107,7 +107,7 @@ test('it emits event before update', async () => {
   const originalData = { test: 'original' };
   const newData = { test: 'new' };
 
-  const { id, updateId } = await node.create(originalData);
+  const [{ id, updateId }] = await node.create([originalData]);
 
   let called = false;
 
@@ -126,7 +126,7 @@ test('it emits event after update', async () => {
   const originalData = { test: 'original' };
   const newData = { test: 'new' };
 
-  const { id, updateId } = await node.create(originalData);
+  const [{ id, updateId }] = await node.create([originalData]);
 
   let called = false;
 
@@ -144,7 +144,7 @@ test('it emits event before delete', async () => {
   const node = new EventNode(new MemoryNode('test_node'));
   const nodeData = { test: 'original' };
 
-  const { id } = await node.create(nodeData);
+  const [{ id }] = await node.create([nodeData]);
 
   let called = false;
 
@@ -162,7 +162,7 @@ test('it emits event after delete', async () => {
   const node = new EventNode(new MemoryNode('test_node'));
   const nodeData = { test: 'original' };
 
-  const { id } = await node.create(nodeData);
+  const [{ id }] = await node.create([nodeData]);
 
   let called = false;
 

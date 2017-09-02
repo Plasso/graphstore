@@ -20,7 +20,7 @@ export default class EventNode extends EventEmitter implements NodeT {
     return nodes;
   }
 
-  async create(data: {}) {
+  async create(data: Array<{}>) {
     this.emit('beforeCreate', data);
     const node = await this.delegate.create(data);
     this.emit('afterCreate', node);

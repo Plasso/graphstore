@@ -14,14 +14,19 @@ export default class MemoryNode implements NodeT {
     return this.name;
   }
 
-  async create(data: {}) {
-    const id = this.id;
-    const stringId = id.toString(32);
-    this.id += 1;
+  async create(data: Array<{}>) {
+    const nodesToReturn = [];
 
-    this.nodes[id] = { id: stringId, updateId: 0, ...data };
+    data.forEach(datum => {
+      const id = this.id;
+      const stringId = id.toString(32);
+      this.id += 1;
 
-    return this.nodes[id];
+      this.nodes[id] = { id: stringId, updateId: 0, ...datum };
+
+      nodesToReturn.push({ ...this.nodes[id] });
+    });
+    return nodesToReturn;
   }
 
   async evict() {

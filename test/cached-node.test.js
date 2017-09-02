@@ -20,7 +20,7 @@ test('it caches created nodes', async (done) => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id } = await node.create(testNode);
+  const [{ id }] = await node.create([testNode]);
 
   const newNode = { id, ...testNode };
 
@@ -35,7 +35,7 @@ test('it asks delegate for uncached node', async () => {
   const memoryNode = new MemoryNode('test_node');
   const node = new CachedNode(client, memoryNode);
 
-  const { id } = await memoryNode.create(testNode);
+  const [{ id }] = await memoryNode.create([testNode]);
 
   const [fetchedNode] = await node.read([id]);
 
@@ -52,7 +52,7 @@ test('it deletes nodes from cache', async (done) => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id } = await node.create(testNode);
+  const [{ id }] = await node.create([testNode]);
 
   await node.delete(id);
 
@@ -66,7 +66,7 @@ test('it deletes nodes from delegate', async () => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id } = await node.create(testNode);
+  const [{ id }] = await node.create([testNode]);
 
   await node.delete(id);
 
@@ -79,7 +79,7 @@ test('it updates nodes in cache', async (done) => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id, updateId } = await node.create({ test: 'hjkl' });
+  const [{ id, updateId }] = await node.create([{ test: 'hjkl' }]);
 
   await node.update({ id, updateId, ...testNode });
 
@@ -94,7 +94,7 @@ test('it can evict items from cache', async (done) => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id, updateId } = await node.create({ test: 'hjkl' });
+  const [{ id, updateId }] = await node.create([{ test: 'hjkl' }]);
 
   await node.evict([id]);
 
@@ -109,7 +109,7 @@ test('it updates nodes in delegate', async () => {
   const testNode = { test: 'asdf' };
   const node = new CachedNode(client, new MemoryNode('test_node'));
 
-  const { id, updateId } = await node.create({ test: 'hjkl' });
+  const [{ id, updateId }] = await node.create([{ test: 'hjkl' }]);
 
   await node.update({ id, updateId, ...testNode });
 
@@ -120,7 +120,7 @@ test('it updates nodes in delegate', async () => {
 
 test('it stops updates to changed nodes', async () => {
   const node = new CachedNode(client, new MemoryNode('node_name'));
-  const { id, updateId } = await node.create({ test: 'data' });
+  const [{ id, updateId }] = await node.create([{ test: 'data' }]);
 
   const first = await node.update({ id, updateId, test: 'asdf' });
   const second = await node.update({ id, updateId, test: 'asdf' });

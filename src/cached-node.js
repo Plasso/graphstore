@@ -14,32 +14,20 @@ export default class CachedNode implements NodeT {
     return `${this.delegate.getName()}_${id}`;
   }
 
-  async _create(id: string, data: {}) {
-    const node = await this.redis.get(this._id(id));
-
-    if (node && node != 'MISSING') {
-      throw new Error(`Id ${id} already exists.`);
-    }
-
-    const json = JSON.stringify({ id, ...data });
-
-    if (node === 'MISSING') {
-      await this.redis.set(this._id(id));
-    } else {
-      const result = await this.redis.set(this._id(id), json);
-
-      if (result == 0) {
-        throw new Error(`Id ${id} already exists`);
-      }
-    }
-    return id;
+  async _create(data: Array<NodeDataT>) {
+    const params = [];
+    data.forEach(datum => {
+      params.push(this._id(datum.id));
+      params.push(JSON.stringify(datum));
+    });
+    return this.redis.mset(params);
   }
 
-  async create(data: {}) {
-    const node = await this.delegate.create(data);
-    await this._create(node.id, node);
+  async create(data: Array<{}>) {
+    const nodes = await this.delegate.create(data);
+    await this._create(nodes);
 
-    return node;
+    return nodes;
   }
 
   async read(ids: Array<string>) {
@@ -70,7 +58,7 @@ export default class CachedNode implements NodeT {
       const promises = delegateNodes.map((delegateNode) => {
         if (delegateNode) {
           nodes[idToIndex[delegateNode.id]] = delegateNode;
-          return this._create(delegateNode.id, delegateNode);
+          return this._create([delegateNode]);
         }
         return Promise.resolve();
       });
