@@ -20,6 +20,20 @@ test('creating an edge returns an id', async () => {
   expect(id).toBe(0);
 });
 
+test.only('creating an edge with data works', async () => {
+  const edgeName = 'test_edge';
+  const ed = new MemoryEdge(edgeName);
+
+  await ed.create('leftId', 'rightId', { some: 'data' });
+  const page = await ed.getFirstAfter('leftId', { first: 1 });
+
+  expect(page.edges[0]).toMatchObject({
+    id: 0,
+    nodeId: 'rightId',
+    data: { some: 'data' },
+  });
+});
+
 test('creating an edge increases count', async () => {
   const edgeName = 'test_edge';
   const ed = new MemoryEdge(edgeName);
