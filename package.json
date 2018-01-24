@@ -1,6 +1,6 @@
 {
   "name": "graphstore",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -10,8 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
