@@ -31,6 +31,9 @@ export default class CachedNode implements NodeT {
   }
 
   async read(ids: Array<string>) {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
     const nodeIds = ids.map((id) => this._id(id));
     const nodes =  await this.redis.mget(nodeIds);
 

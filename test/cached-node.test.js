@@ -42,6 +42,15 @@ test('it asks delegate for uncached node', async () => {
   expect(fetchedNode).toMatchObject({ id, ...testNode });
 });
 
+test('it skips asking delegate when passed empty array', async () => {
+  const memoryNode = new MemoryNode('test_node');
+  const node = new CachedNode(client, memoryNode);
+
+  const ret = await node.read([]);
+
+  expect(ret.length).toBe(0);
+});
+
 test('it asks delegate for name', () => {
   const node = new CachedNode({}, new MemoryNode('test_node'));
 
