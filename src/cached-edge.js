@@ -174,16 +174,18 @@ export default class CachedEdge implements EdgeT {
     const { hasNextPage, edges } = await this.delegate.getFirstAfter(leftId, { after, first: CachedEdge.MAX_BATCH });
 
     let tries = 0;
+    let lastError;
 
     while(tries < 4) {
       try {
         const page = await this._updateEdgeCache(leftId, first, hasNextPage, edges);
         return page;
       } catch (e) {
+        lastError = e;
         tries = tries + 1;
       }
     }
-    throw new Error(`Could not update edge cache`);
+    throw new Error(`Could not update edge cache. leftId: ${leftId} first: ${first} hasNextPage: ${hasNextPage} edges: ${edges} ${lastError}`);
   }
 
   async delete(leftId: string, id: number) {
