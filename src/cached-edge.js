@@ -55,15 +55,17 @@ export default class CachedEdge implements EdgeT {
   async create(leftNodeId: string, rightNodeId: string, data: ?{}) {
     const id = await this.delegate.create(leftNodeId, rightNodeId, data);
     let tries = 0;
+    let lastError;
 
     while(tries < 4) {
       try {
         return this._create(id, leftNodeId, rightNodeId, data);
       } catch (e) {
+        lastError = e;
         tries = tries + 1;
       }
     }
-    throw new Error(`Could not update cache`);
+    throw new Error(`Could not update cache.  leftNodeId: ${leftNodeId} rightNodeId: ${rightNodeId} data: ${data} ${lastError}`);
   }
 
   async _read(leftId: string, { after, first: firstOrUndefined }: EdgeFirstAfterT) {
