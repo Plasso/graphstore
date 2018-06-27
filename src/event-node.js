@@ -34,9 +34,10 @@ export default class EventNode extends EventEmitter implements NodeT {
   }
 
   async update(data: NodeDataT) {
-    this.emit('beforeUpdate', data);
+    const [oldData] = await this.read([data.id]);
+    this.emit('beforeUpdate', data, oldData);
     const success = await this.delegate.update(data);
-    this.emit('afterUpdate', data);
+    this.emit('afterUpdate', data, oldData);
     return success;
   }
 
